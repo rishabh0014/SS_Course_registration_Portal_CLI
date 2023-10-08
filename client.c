@@ -7,46 +7,35 @@
 
 #define PORT 8080
 
-void hide_password(char *password, int max_length)
+void show_student_menu()
 {
-    struct termios old_term, new_term;
-    tcgetattr(STDIN_FILENO, &old_term);
-    new_term = old_term;
-    new_term.c_lflag &= ~(ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &new_term);
+    printf("1) Enroll to new Courses\n2) Unenroll from already enrolled Courses\n3) View enrolled Courses\n4) Password Change\n5) Exit\n");
+}
 
-    int i = 0;
-    char ch;
+void show_faculty_menu()
+{
+    printf("1) Add new Course\n2) Remove offered Course\n3) View enrollments in Courses\n4) Password Change\n5) Exit\n");
+}
 
-    while (1)
-    {
-        ch = getchar();
-        if (ch == '\n' || i >= max_length - 1)
-        {
-            break;
-        }
-        password[i] = ch;
-        i++;
-    }
-
-    password[i] = '\0';
-    tcsetattr(STDIN_FILENO, TCSANOW, &old_term);
-    printf("\n");
+void show_admin_menu()
+{
+    printf("1) Add student\n2) Add Faculty\n3) Activate/Deactivate Student\n4) Update Student/Faculty details\n5) Exit\n");
 }
 
 int main()
 {
+
+    // DO NOT TOUCH CODE START
     int client_socket;
     struct sockaddr_in server_addr;
     int auth_status;
-
+    char username[50], password[50];
     client_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (client_socket < 0)
     {
         perror("Error in socket creation");
         exit(1);
     }
-
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = PORT;
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
@@ -58,6 +47,8 @@ int main()
 
     printf("Hello! Welcome to the Course Registration Portal\n");
     int num;
+
+    // choose role
     while (1)
     {
         printf("Log in As:\n 1) Student\n 2) Faculty\n 3) Admin\n 4) Exit\n");
@@ -72,52 +63,154 @@ int main()
             break;
         }
     }
-    
     if (num == 4)
     {
         printf("Bye Bye!!\n");
         printf("Exiting...!!\n");
         exit(0);
     }
-    printf("%d\n", num);
+    // DO NOT TOUCH CODE END
 
-    char username[50], password[50];
     printf("Enter username: ");
     scanf("%s", username);
     getchar();
     printf("Enter password: ");
     hide_password(password, sizeof(password));
+
+    send(client_socket, &num, sizeof(int), 0);
     send(client_socket, username, sizeof(username), 0);
     send(client_socket, password, sizeof(password), 0);
-    send(client_socket, &num, sizeof(int), 0);
-    
-
     recv(client_socket, &auth_status, sizeof(int), 0);
 
     if (auth_status == 1)
     {
         printf("Authentication successful!\n");
+        printf("Hello, %s! Welcome..\n", username);
+        // student logic
         if (num == 1)
         {
-            system("gcc -o student_only/student_main.out student_only/student_main.c");
-            system("student_only/student_main.out username");
+            int choice;
+            while (1)
+            {
+                show_student_menu();
+                scanf("%d", &choice);
+                if (choice < 1 || 5 < choice)
+                {
+                    printf("Invalid choice.. Try Again...\n");
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            if (choice == 1)
+            {
+                // Enroll to new Courses
+            }
+            else if (choice == 2)
+            {
+                // Unenroll from already enrolled Courses
+            }
+            else if (choice == 3)
+            {
+                // View enrolled Courses
+            }
+            else if (choice == 4)
+            {
+                // Password Change
+            }
+            else if (choice == 5)
+            {
+                // Exit
+                printf("Signing Out... BYE BYE!!");
+                return 0;
+            }
         }
+        // faculty logic
         else if (num == 2)
         {
-            system("gcc -o faculty_only/faculty_main.out faculty_only/faculty_main.c");
-            system("faculty_only/faculty_main.out");
+            int choice;
+            while (1)
+            {
+                show_faculty_menu();
+                scanf("%d", &choice);
+                if (choice < 1 || 5 < choice)
+                {
+                    printf("Invalid choice.. Try Again...\n");
+                }
+                else
+                {
+                    break;
+                }
+            }
+            if (choice == 1)
+            {
+                // Add new Course
+            }
+            else if (choice == 2)
+            {
+                // Remove offered Course
+            }
+            else if (choice == 3)
+            {
+                // View enrollments in Courses
+            }
+            else if (choice == 4)
+            {
+                // Password Change
+            }
+            else if (choice == 5)
+            {
+                // Exit
+                printf("Signing Out... BYE BYE!!");
+                return 0;
+            }
         }
+        // admin logic
         else if (num == 3)
         {
-            system("gcc -o admin_only/admin_main.out admin_only/admin_main.c");
-            system("admin_only/admin_main.out");
+            int choice;
+            while (1)
+            {
+                show_admin_menu();
+                scanf("%d", &choice);
+                if (choice < 1 || 5 < choice)
+                {
+                    printf("Invalid choice.. Try Again...\n");
+                }
+                else
+                {
+                    break;
+                }
+            }
+            if (choice == 1)
+            {
+                // Add student
+            }
+            else if (choice == 2)
+            {
+                // Add Faculty
+            }
+            else if (choice == 3)
+            {
+                // Activate/Deactivate Student
+            }
+            else if (choice == 4)
+            {
+                // Update Student/Faculty details
+            }
+            else if (choice == 5)
+            {
+                // Exit
+                printf("Signing Out... BYE BYE!!");
+                return 0;
+            }
         }
     }
     else
     {
         printf("Authentication failed.\n");
     }
-
-    close(client_socket);
     return 0;
 }
