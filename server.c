@@ -17,6 +17,38 @@ struct User
     int num;
 };
 
+struct Student
+{
+    char login_id[50];
+    char password[50];
+    char name[100];
+    int age;
+    char email_id[100];
+    char address[100];
+};
+
+void writeStudentToFile(struct Student student, const char *filename)
+{
+    int file_fd = open(filename, O_WRONLY | O_APPEND);
+    if (file_fd < 0)
+    {
+        perror("Error opening file");
+        return;
+    }
+
+    char buffer[512];
+    snprintf(buffer, sizeof(buffer), "%s$%s$%s$%d$%s$%s\n",
+             student.login_id,
+             student.password,
+             student.name,
+             student.age,
+             student.email_id,
+             student.address);
+
+    write(file_fd, buffer, strlen(buffer));
+    close(file_fd);
+}
+
 int readUsersFromFile(struct User users[], const char *filename)
 {
     int file_fd = open(filename, O_RDONLY);
@@ -112,12 +144,16 @@ void *handle_client(void *arg)
             if (changePassword(users, username, curr_password, new_password))
             {
                 FILE *file = fopen("data/students_data/student_log_in.txt", "w");
-                if (file != NULL) {
-                    for (int j = 0; j < users_count; j++) {
+                if (file != NULL)
+                {
+                    for (int j = 0; j < users_count; j++)
+                    {
                         fprintf(file, "%s %s\n", users[j].username, users[j].password);
                     }
                     fclose(file);
-                } else {
+                }
+                else
+                {
                     perror("Error opening user data file for update");
                 }
                 change_pass_status = 1;
@@ -154,6 +190,27 @@ void *handle_client(void *arg)
             }
         }
         send(client_socket, &auth_status, sizeof(int), 0);
+
+        read(client_socket, &choice, sizeof(int));
+        if (choice == 1)
+        {
+            // Add Student
+            char buffer[sizeof(struct Student)];
+            recv(client_socket, buffer, sizeof(struct Student), 0);
+            struct Student student_info;
+            memcpy(&student_info, buffer, sizeof(struct Student));
+            printf("%s",student_info.name);
+            writeStudentToFile(student_info, "data/students_data/student_data.txt");
+        }
+        else if (choice == 2)
+        {
+        }
+        else if (choice == 3)
+        {
+        }
+        else if (choice == 4)
+        {
+        }
     }
 
     close(client_socket);

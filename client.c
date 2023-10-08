@@ -324,30 +324,37 @@ int main()
             // Add student
             if (choice == 1)
             {
-                struct Student student1;
+                struct Student student_info;
                 getchar();
                 printf("Enter Roll No/Log in ID: ");
-                scanf("%[^\n]", student1.login_id);
+                scanf("%[^\n]", student_info.login_id);
                 getchar();
                 printf("Enter Password: ");
-                scanf("%[^\n]", student1.password);
+                scanf("%[^\n]", student_info.password);
                 getchar();
                 printf("Enter Name: ");
-                scanf("%[^\n]", student1.name);
+                scanf("%[^\n]", student_info.name);
                 getchar();
                 printf("Enter age: ");
-                scanf("%d", &student1.age);
+                scanf("%d", &student_info.age);
                 getchar();
                 printf("Enter email ID: ");
-                scanf("%[^\n]", student1.email_id);
+                scanf("%[^\n]", student_info.email_id);
                 getchar();
                 printf("Enter Address: ");
-                scanf("%[^\n]", student1.address);
+                scanf("%[^\n]", student_info.address);
                 getchar();
                 // Write student data to the file
-                writeStudentToFile(student1, "data/students_data/student_data.txt");
+                // writeStudentToFile(student_info, "data/students_data/student_data.txt");
 
+                // int add_std = 1;
+                send(client_socket,&choice,sizeof(int),0);
                 
+                char buffer[sizeof(struct Student)];
+                memcpy(buffer, &student_info, sizeof(struct Student));
+                
+                send(client_socket, buffer, sizeof(struct Student), 0);
+
             }
             // Add Faculty
             else if (choice == 2)
