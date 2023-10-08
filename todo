@@ -1,0 +1,20 @@
+Student 
+- Enroll to new Courses
+- Unenroll from already enrolled Courses
+- View enrolled Courses
+- Password Change -----------------------------------------------------
+- Exit ----------------------------------------------------
+==============================================================================================================
+Admin
+- Add Student
+- Add Faculty
+- Activate/Deactivate Student
+- Update Student/Faculty details
+- Exit ----------------------------------------------------
+==============================================================================================================
+Faculty
+- Add new Course
+- Remove offered Course
+- View enrollments in Courses
+- Password Change
+- Exit ----------------------------------------------------
