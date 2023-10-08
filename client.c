@@ -4,9 +4,22 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <termios.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #define PORT 8080
 
+struct Student
+{
+    char login_id[50];
+    char password[50];
+    char name[100];
+    int age;
+    char email_id[100];
+    char address[100];
+};
+
+// General Functionality
 void hide_password(char *password, int max_length)
 {
     struct termios old_term, new_term;
@@ -34,16 +47,97 @@ void hide_password(char *password, int max_length)
     printf("\n");
 }
 
+void writeStudentToFile(struct Student student, const char *filename)
+{
+    int file_fd = open(filename, O_WRONLY | O_APPEND);
+    if (file_fd < 0)
+    {
+        perror("Error opening file");
+        return;
+    }
+
+    char buffer[512];
+    snprintf(buffer, sizeof(buffer), "%s$%s$%s$%d$%s$%s\n",
+             student.login_id,
+             student.password,
+             student.name,
+             student.age,
+             student.email_id,
+             student.address);
+
+    write(file_fd, buffer, strlen(buffer));
+    close(file_fd);
+}
+
+void readStudentsFromFile(const char *filename)
+{
+    int file_fd = open(filename, O_RDONLY);
+    if (file_fd < 0)
+    {
+        perror("Error opening file");
+        return;
+    }
+
+    char buffer[512];
+    ssize_t bytesRead;
+
+    while ((bytesRead = read(file_fd, buffer, sizeof(buffer))) > 0)
+    {
+        char *token = strtok(buffer, ",");
+        struct Student student;
+
+        if (token != NULL)
+        {
+            strncpy(student.login_id, token, sizeof(student.login_id) - 1);
+            token = strtok(NULL, ",");
+        }
+
+        if (token != NULL)
+        {
+            strncpy(student.password, token, sizeof(student.password) - 1);
+            token = strtok(NULL, ",");
+        }
+
+        if (token != NULL)
+        {
+            strncpy(student.name, token, sizeof(student.name) - 1);
+            token = strtok(NULL, ",");
+        }
+
+        if (token != NULL)
+        {
+            student.age = atoi(token);
+            token = strtok(NULL, ",");
+        }
+
+        if (token != NULL)
+        {
+            strncpy(student.email_id, token, sizeof(student.email_id) - 1);
+            token = strtok(NULL, ",");
+        }
+
+        if (token != NULL)
+        {
+            strncpy(student.address, token, sizeof(student.address) - 1);
+        }
+    }
+
+    close(file_fd);
+}
+
+// Student Functionality
 void show_student_menu()
 {
     printf("1) Enroll to new Courses\n2) Unenroll from already enrolled Courses\n3) View enrolled Courses\n4) Password Change\n5) Exit\n");
 }
 
+// Fauctly Functionality
 void show_faculty_menu()
 {
     printf("1) Add new Course\n2) Remove offered Course\n3) View enrollments in Courses\n4) Password Change\n5) Exit\n");
 }
 
+// Admin Functionality
 void show_admin_menu()
 {
     printf("1) Add student\n2) Add Faculty\n3) Activate/Deactivate Student\n4) Update Student/Faculty details\n5) Exit\n");
@@ -227,25 +321,49 @@ int main()
                     break;
                 }
             }
+            // Add student
             if (choice == 1)
             {
-                // Add student
+                struct Student student1;
+                getchar();
+                printf("Enter Roll No/Log in ID: ");
+                scanf("%[^\n]", student1.login_id);
+                getchar();
+                printf("Enter Password: ");
+                scanf("%[^\n]", student1.password);
+                getchar();
+                printf("Enter Name: ");
+                scanf("%[^\n]", student1.name);
+                getchar();
+                printf("Enter age: ");
+                scanf("%d", &student1.age);
+                getchar();
+                printf("Enter email ID: ");
+                scanf("%[^\n]", student1.email_id);
+                getchar();
+                printf("Enter Address: ");
+                scanf("%[^\n]", student1.address);
+                getchar();
+                // Write student data to the file
+                writeStudentToFile(student1, "data/students_data/student_data.txt");
+
+                
             }
+            // Add Faculty
             else if (choice == 2)
             {
-                // Add Faculty
             }
+            // Activate/Deactivate Student
             else if (choice == 3)
             {
-                // Activate/Deactivate Student
             }
+            // Update Student/Faculty details
             else if (choice == 4)
             {
-                // Update Student/Faculty details
             }
+            // Exit
             else if (choice == 5)
             {
-                // Exit
                 printf("Signing Out... BYE BYE!!");
                 return 0;
             }
