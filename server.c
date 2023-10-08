@@ -8,6 +8,7 @@
 
 #define PORT 8080
 #define MAX_CLIENTS 10
+int clients_count = 0;
 
 struct User
 {
@@ -46,21 +47,38 @@ int readUsersFromFile(struct User users[], const char *filename)
     return count;
 }
 
+int changePassword(struct User users[], const char *username, const char *current_password, const char *new_password)
+{
+    for (int i = 0; i < MAX_CLIENTS; i++)
+    {
+        if (strcmp(username, users[i].username) == 0)
+        {
+            if (strcmp(current_password, users[i].password) == 0)
+            {
+                strcpy(users[i].password, new_password);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 void *handle_client(void *arg)
 {
     int client_socket = *((int *)arg);
     char username[50], password[50];
-    int num;
-    int auth_status = 0;
+    char curr_password[50], new_password[50];
+    int num, choice;
+    int auth_status = 0, change_pass_status = 0;
     struct User users[MAX_CLIENTS];
     int users_count;
 
     read(client_socket, &num, sizeof(int));
-    
+
     read(client_socket, username, sizeof(username));
     read(client_socket, password, sizeof(password));
     if (num == 1)
-    {   //student Logic
+    { // student Logic
         users_count = readUsersFromFile(users, "data/students_data/student_log_in.txt");
         for (int i = 0; i < users_count; i++)
         {
@@ -71,12 +89,47 @@ void *handle_client(void *arg)
             }
         }
         send(client_socket, &auth_status, sizeof(int), 0);
+
+        read(client_socket, &choice, sizeof(int));
+        if (choice == 1)
+        {
+            // Enroll to new Courses
+        }
+        else if (choice == 2)
+        {
+            // Unenroll from already enrolled Courses
+        }
+        else if (choice == 3)
+        {
+            // View enrolled Courses
+        }
+        else if (choice == 4)
+        {
+            // Password Change
+            read(client_socket, curr_password, sizeof(curr_password));
+            read(client_socket, new_password, sizeof(new_password));
+
+            if (changePassword(users, username, curr_password, new_password))
+            {
+                FILE *file = fopen("data/students_data/student_log_in.txt", "w");
+                if (file != NULL) {
+                    for (int j = 0; j < users_count; j++) {
+                        fprintf(file, "%s %s\n", users[j].username, users[j].password);
+                    }
+                    fclose(file);
+                } else {
+                    perror("Error opening user data file for update");
+                }
+                change_pass_status = 1;
+            }
+            send(client_socket, &change_pass_status, sizeof(int), 0);
+        }
     }
 
-    //LAST
+    // LAST
     else if (num == 2)
-    {   
-        //faculty logic
+    {
+        // faculty logic
         users_count = readUsersFromFile(users, "data/faculties_data/faculties_log_in.txt");
         for (int i = 0; i < users_count; i++)
         {
@@ -89,8 +142,8 @@ void *handle_client(void *arg)
         send(client_socket, &auth_status, sizeof(int), 0);
     }
     else if (num == 3)
-    {   
-        //admin logic
+    {
+        // admin logic
         users_count = readUsersFromFile(users, "data/admins_data/admin_log_in.txt");
         for (int i = 0; i < users_count; i++)
         {
@@ -104,16 +157,17 @@ void *handle_client(void *arg)
     }
 
     close(client_socket);
+    clients_count--;
     pthread_exit(NULL);
 }
 
-int main(){
-    //DO NOT TOUCH CODE START
+int main()
+{
+    // DO NOT TOUCH CODE START
     int server_socket, new_socket;
     struct sockaddr_in server_addr, new_addr;
     socklen_t addr_size;
     pthread_t tid[MAX_CLIENTS];
-    int clients_count = 0;
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (server_socket < 0)
     {
@@ -146,7 +200,7 @@ int main(){
             perror("Error in creating thread");
         }
         clients_count++;
-        printf("%d\n",clients_count);
+        printf("%d\n", clients_count);
         if (clients_count >= MAX_CLIENTS)
         {
             printf("Maximum number of clients reached. Connection rejected.\n");
@@ -154,6 +208,5 @@ int main(){
         }
     }
     close(server_socket);
-    //DO NOT TOUCH CODE END
-
+    // DO NOT TOUCH CODE END
 }

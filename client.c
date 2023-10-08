@@ -7,6 +7,33 @@
 
 #define PORT 8080
 
+void hide_password(char *password, int max_length)
+{
+    struct termios old_term, new_term;
+    tcgetattr(STDIN_FILENO, &old_term);
+    new_term = old_term;
+    new_term.c_lflag &= ~(ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &new_term);
+
+    int i = 0;
+    char ch;
+
+    while (1)
+    {
+        ch = getchar();
+        if (ch == '\n' || i >= max_length - 1)
+        {
+            break;
+        }
+        password[i] = ch;
+        i++;
+    }
+
+    password[i] = '\0';
+    tcsetattr(STDIN_FILENO, TCSANOW, &old_term);
+    printf("\n");
+}
+
 void show_student_menu()
 {
     printf("1) Enroll to new Courses\n2) Unenroll from already enrolled Courses\n3) View enrolled Courses\n4) Password Change\n5) Exit\n");
@@ -28,8 +55,8 @@ int main()
     // DO NOT TOUCH CODE START
     int client_socket;
     struct sockaddr_in server_addr;
-    int auth_status;
-    char username[50], password[50];
+    int auth_status, change_pass_status;
+    char username[50], password[50], curr_password[50], new_password[50];
     client_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (client_socket < 0)
     {
@@ -69,7 +96,6 @@ int main()
         printf("Exiting...!!\n");
         exit(0);
     }
-    // DO NOT TOUCH CODE END
 
     printf("Enter username: ");
     scanf("%s", username);
@@ -86,6 +112,7 @@ int main()
     {
         printf("Authentication successful!\n");
         printf("Hello, %s! Welcome..\n", username);
+        // DO NOT TOUCH CODE END
         // student logic
         if (num == 1)
         {
@@ -119,6 +146,22 @@ int main()
             else if (choice == 4)
             {
                 // Password Change
+                printf("Enter Current Password: ");
+                scanf("%s", curr_password);
+                printf("Enter New Password: ");
+                scanf("%s", new_password);
+                send(client_socket, &choice, sizeof(int), 0);
+                send(client_socket, curr_password, sizeof(curr_password), 0);
+                send(client_socket, new_password, sizeof(new_password), 0);
+                recv(client_socket, &change_pass_status, sizeof(int), 0);
+                if (change_pass_status == 1)
+                {
+                    printf("succ");
+                }
+                else
+                {
+                    printf("again");
+                }
             }
             else if (choice == 5)
             {
