@@ -79,25 +79,21 @@ int readUsersFromFile(const char *username, const char *password, const char *fi
 
     while ((bytesRead = read(file_fd, buffer, sizeof(buffer))) > 0)
     {
-        char *token = strtok(buffer, "$");
-        char stored_username[50], stored_password[50];
+        char *line = strtok(buffer, "\n");
+        while (line != NULL)
+        {
+            char stored_username[50], stored_password[50];
 
-        if (token != NULL)
-        {
-            strncpy(stored_username, token, sizeof(stored_username) - 1);
-            token = strtok(NULL, "$");
-        }
-        if (token != NULL)
-        {
-            strncpy(stored_password, token, sizeof(stored_password) - 1);
-            token = strtok(NULL, "$");
-        }
+            sscanf(line, "%49[^$]$%49[^$]$", stored_username, stored_password);
 
-        // printf("%s=>%s||%s=>%s\n",stored_username,username,stored_password,password);
-        if (strcmp(stored_username, username) == 0 && strcmp(stored_password, password) == 0)
-        {
-            auth_status = 1;
-            break;
+            if (strcmp(stored_username, username) == 0 && strcmp(stored_password, password) == 0)
+            {
+                auth_status = 1;
+                close(file_fd);
+                return auth_status;
+            }
+
+            line = strtok(NULL, "\n");
         }
     }
 
@@ -144,7 +140,7 @@ void *handle_client(void *arg)
         send(client_socket, exit_, sizeof(exit_), 0);
     }
     else
-    {   
+    {
         char en_username[20] = "Enter username: ";
         char en_password[20] = "Enter password: ";
         send(client_socket, en_username, sizeof(en_username), 0);

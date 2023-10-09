@@ -184,6 +184,8 @@ int main()
                 int choice;
                 scanf("%d", &choice);
                 send(client_socket, &choice, sizeof(choice), 0);
+                
+                //Add Student
                 if (choice == 1)
                 {
                     struct Student student_info;
@@ -209,13 +211,11 @@ int main()
                         scanf("%[^\n]", student_info.address);
                         getchar();
                         printf("%s,%s,%s,%d,%s,%s\n", student_info.login_id, student_info.password, student_info.name, student_info.age, student_info.email_id, student_info.address);
-                        // send(client_socket, &choice, sizeof(int), 0);
+                        char buffer[sizeof(struct Student)];
+                        memcpy(buffer, &student_info, sizeof(struct Student));
+
+                        send(client_socket, buffer, sizeof(struct Student), 0);
                     }
-
-                    char buffer[sizeof(struct Student)];
-                    memcpy(buffer, &student_info, sizeof(struct Student));
-
-                    send(client_socket, buffer, sizeof(struct Student), 0);
                 }
                 else if (choice == 2)
                 {
