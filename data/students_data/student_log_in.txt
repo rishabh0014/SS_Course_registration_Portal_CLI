@@ -1,1 +1,4 @@
-admin1 pass1
+1$1$
+admin1$pass1$
+qwe$123$
+1$1

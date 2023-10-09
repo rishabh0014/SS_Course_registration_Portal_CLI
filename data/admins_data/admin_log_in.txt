@@ -1,1 +1,1 @@
-admin3 pass3
+admin3$pass3$
