@@ -19,6 +19,17 @@ struct Student
     char address[100];
 };
 
+struct Faculty
+{
+    char login_id[50];
+    char password[50];
+    char name[100];
+    char department[50];
+    char designation[50];
+    char email_id[100];
+    char address[100];
+};
+
 // General Functionality
 void hide_password(char *password, int max_length)
 {
@@ -179,101 +190,217 @@ int main()
                 printf("Authentication successful!\n");
                 printf("Hello, %s! Welcome..\n", username);
                 char admin_menu[200];
-                recv(client_socket, admin_menu, sizeof(admin_menu), 0);
-                printf("%s", admin_menu);
-                int choice;
-                scanf("%d", &choice);
-                send(client_socket, &choice, sizeof(choice), 0);
+                while (1)
+                {
+                    recv(client_socket, admin_menu, sizeof(admin_menu), 0);
+                    printf("%s", admin_menu);
+                    int choice;
+                    scanf("%d", &choice);
+                    send(client_socket, &choice, sizeof(choice), 0);
 
-                // Add Student
-                if (choice == 1)
-                {
-                    struct Student student_info;
-                    // Taking student Info
+                    // Add Student
+                    if (choice == 1)
                     {
-                        getchar();
-                        printf("Enter Roll No/Log in ID: ");
-                        scanf("%[^\n]", student_info.login_id);
-                        getchar();
-                        printf("Enter Password: ");
-                        scanf("%[^\n]", student_info.password);
-                        getchar();
-                        printf("Enter Name: ");
-                        scanf("%[^\n]", student_info.name);
-                        getchar();
-                        printf("Enter age: ");
-                        scanf("%d", &student_info.age);
-                        getchar();
-                        printf("Enter email ID: ");
-                        scanf("%[^\n]", student_info.email_id);
-                        getchar();
-                        printf("Enter Address: ");
-                        scanf("%[^\n]", student_info.address);
-                        getchar();
-                        char buffer[sizeof(struct Student)];
-                        memcpy(buffer, &student_info, sizeof(struct Student));
-                        send(client_socket, buffer, sizeof(struct Student), 0);
-                    }
-                }
-                // View Student Details
-                else if (choice == 2)
-                {
-                    char give_stu_id[100];
-                    recv(client_socket, give_stu_id, sizeof(give_stu_id), 0);
-                    printf("%s", give_stu_id);
-                    char find_login_id[50];
-                    scanf("%s", find_login_id);
-                    send(client_socket, find_login_id, sizeof(find_login_id), 0);
-                    int stu_found;
-                    recv(client_socket, &stu_found, sizeof(int), 0);
-                    if (stu_found)
-                    {
-                        char buffer[sizeof(struct Student)];
-                        recv(client_socket, buffer, sizeof(struct Student), 0);
                         struct Student student_info;
-                        memcpy(&student_info, buffer, sizeof(struct Student));
-                        printf("Student Details\n");
-                        printf("Student Roll No/Log in ID: %s\n",student_info.login_id);
-                        printf("Student Password: %s\n",student_info.password);
-                        printf("Student Name: %s\n",student_info.name);
-                        printf("Student age: %d\n",student_info.age);
-                        printf("Student Email ID: %s\n",student_info.email_id);
-                        printf("Student Address: %s\n",student_info.address);
+                        // Taking student Info
+                        {
+                            getchar();
+                            printf("Enter Roll No/Log in ID: ");
+                            scanf("%[^\n]", student_info.login_id);
+                            getchar();
+                            printf("Enter Password: ");
+                            scanf("%[^\n]", student_info.password);
+                            getchar();
+                            printf("Enter Name: ");
+                            scanf("%[^\n]", student_info.name);
+                            getchar();
+                            printf("Enter age: ");
+                            scanf("%d", &student_info.age);
+                            getchar();
+                            printf("Enter email ID: ");
+                            scanf("%[^\n]", student_info.email_id);
+                            getchar();
+                            printf("Enter Address: ");
+                            scanf("%[^\n]", student_info.address);
+                            getchar();
+                            char buffer[sizeof(struct Student)];
+                            memcpy(buffer, &student_info, sizeof(struct Student));
+                            send(client_socket, buffer, sizeof(struct Student), 0);
+                        }
                     }
-                    else
+                    // View Student Details
+                    else if (choice == 2)
                     {
-                        char not_found[30];
-                        recv(client_socket,not_found,sizeof(not_found),0);
-                        printf("%s\n",not_found);
+                        char give_stu_id[100];
+                        recv(client_socket, give_stu_id, sizeof(give_stu_id), 0);
+                        printf("%s", give_stu_id);
+                        char find_login_id[50];
+                        scanf("%s", find_login_id);
+                        send(client_socket, find_login_id, sizeof(find_login_id), 0);
+                        int stu_found;
+                        recv(client_socket, &stu_found, sizeof(int), 0);
+                        if (stu_found)
+                        {
+                            char buffer[sizeof(struct Student)];
+                            recv(client_socket, buffer, sizeof(struct Student), 0);
+                            struct Student student_info;
+                            memcpy(&student_info, buffer, sizeof(struct Student));
+                            printf("Student Details\n");
+                            printf("Student Roll No/Log in ID: %s\n", student_info.login_id);
+                            printf("Student Password: %s\n", student_info.password);
+                            printf("Student Name: %s\n", student_info.name);
+                            printf("Student age: %d\n", student_info.age);
+                            printf("Student Email ID: %s\n", student_info.email_id);
+                            printf("Student Address: %s\n", student_info.address);
+                        }
+                        else
+                        {
+                            char not_found[30];
+                            recv(client_socket, not_found, sizeof(not_found), 0);
+                            printf("%s\n", not_found);
+                        }
                     }
-                }
-                // Add Faculty
-                else if (choice == 3)
-                {
-                }
-                // View Faculty Details
-                else if (choice == 4)
-                {
-                }
-                // Activate Student
-                else if (choice == 5)
-                {
-                }
-                // Block Student
-                else if (choice == 6)
-                {
-                }
-                // Modify Student Details
-                else if (choice == 7)
-                {
-                }
-                // Moify Faculty Details
-                else if (choice == 8)
-                {
-                }
-                // LogOut and Exit
-                else if (choice == 9)
-                {
+                    // Add Faculty
+                    else if (choice == 3)
+                    {
+                        struct Faculty faculty_info;
+                        // Taking faculty Info
+                        {
+                            getchar();
+                            printf("Enter Log in ID: ");
+                            scanf("%[^\n]", faculty_info.login_id);
+                            getchar();
+                            printf("Enter Password: ");
+                            scanf("%[^\n]", faculty_info.password);
+                            getchar();
+                            printf("Enter Name: ");
+                            scanf("%[^\n]", faculty_info.name);
+                            getchar();
+                            printf("Enter Department: ");
+                            scanf("%s", faculty_info.department);
+                            getchar();
+                            printf("Enter Designation: ");
+                            scanf("%s", faculty_info.designation);
+                            getchar();
+                            printf("Enter email ID: ");
+                            scanf("%[^\n]", faculty_info.email_id);
+                            getchar();
+                            printf("Enter Address: ");
+                            scanf("%[^\n]", faculty_info.address);
+                            getchar();
+                            char buffer[sizeof(struct Faculty)];
+                            memcpy(buffer, &faculty_info, sizeof(struct Faculty));
+                            send(client_socket, buffer, sizeof(struct Faculty), 0);
+                        }
+                    }
+                    // View Faculty Details
+                    else if (choice == 4)
+                    {
+                        char give_fac_id[100];
+                        recv(client_socket, give_fac_id, sizeof(give_fac_id), 0);
+                        printf("%s", give_fac_id);
+                        char find_login_id[50];
+                        scanf("%s", find_login_id);
+                        send(client_socket, find_login_id, sizeof(find_login_id), 0);
+                        int fac_found;
+                        recv(client_socket, &fac_found, sizeof(int), 0);
+                        if (fac_found)
+                        {
+                            char buffer[sizeof(struct Faculty)];
+                            recv(client_socket, buffer, sizeof(struct Faculty), 0);
+                            struct Faculty faculty_info;
+                            memcpy(&faculty_info, buffer, sizeof(struct Faculty));
+                            printf("Student Details\n");
+                            printf("Student Roll No/Log in ID: %s\n", faculty_info.login_id);
+                            printf("Student Password: %s\n", faculty_info.password);
+                            printf("Student Name: %s\n", faculty_info.name);
+                            printf("Student department: %s\n", faculty_info.department);
+                            printf("Student designation: %s\n", faculty_info.designation);
+                            printf("Student Email ID: %s\n", faculty_info.email_id);
+                            printf("Student Address: %s\n", faculty_info.address);
+                        }
+                        else
+                        {
+                            char not_found[30];
+                            recv(client_socket, not_found, sizeof(not_found), 0);
+                            printf("%s\n", not_found);
+                        }
+                    }
+                    // Activate Student
+                    else if (choice == 5)
+                    {
+                    }
+                    // Block Student
+                    else if (choice == 6)
+                    {
+                    }
+                    // Modify Student Details
+                    else if (choice == 7)
+                    {
+                        // char en_login[45];
+                        // recv(client_socket, en_login, sizeof(en_login), 0);
+                        // printf("%s", en_login);
+                        // char log_in_id[50];
+                        // getchar();
+                        // scanf("%[^\n]", log_in_id);
+                        // send(client_socket, log_in_id, sizeof(log_in_id), 0);
+
+                        // char which_det[50];
+                        // recv(client_socket, which_det, sizeof(which_det), 0);
+                        // printf("%s",which_det);
+                        // char this_detail[15];
+                        // getchar();
+                        // scanf("%[^\n]",this_detail);
+                        // send(client_socket,this_detail,sizeof(this_detail),0);
+
+                        // // getchar();
+                        // char en_nw_det[20];
+                        // recv(client_socket,en_nw_det,sizeof(en_nw_det),0);
+                        // printf("%s",en_nw_det);
+                        // char new_data[120];
+                        // getchar();
+                        // scanf("%[^\n]",new_data);
+                        // send(client_socket,new_data,sizeof(new_data),0);
+                        // char update_status[40];
+                        // recv(client_socket,update_status,sizeof(update_status),0);
+                        // printf("%s\n",update_status);
+                        char en_login[45];
+                        recv(client_socket, en_login, sizeof(en_login), 0);
+                        printf("%s", en_login);
+                        char log_in_id[50];
+                        getchar();
+                        scanf(" %[^\n]", log_in_id);
+                        send(client_socket, log_in_id, sizeof(log_in_id), 0);
+
+                        char which_det[50];
+                        recv(client_socket, which_det, sizeof(which_det), 0);
+                        printf("%s", which_det);
+                        char this_detail[15];
+                        getchar();
+                        scanf(" %[^\n]", this_detail);
+                        send(client_socket, this_detail, sizeof(this_detail), 0);
+
+                        char en_nw_det[20];
+                        recv(client_socket, en_nw_det, sizeof(en_nw_det), 0);
+                        printf("%s", en_nw_det);
+                        char new_data[120];
+                        getchar();
+                        scanf(" %[^\n]", new_data);
+                        send(client_socket, new_data, sizeof(new_data), 0);
+
+                        char update_status[40];
+                        recv(client_socket, update_status, sizeof(update_status), 0);
+                        printf("%s\n", update_status);
+                    }
+                    // Moify Faculty Details
+                    else if (choice == 8)
+                    {
+                    }
+                    // LogOut and Exit
+                    else if (choice == 9)
+                    {
+                        exit(0);
+                    }
                 }
             }
             else
