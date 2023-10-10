@@ -101,6 +101,44 @@ int readUsersFromFile(const char *username, const char *password, const char *fi
     return auth_status;
 }
 
+int search_student_by_id(const char *student_id, const char *filename, struct Student *result)
+{
+    int file_fd = open(filename, O_RDONLY);
+    if (file_fd < 0)
+    {
+        perror("Error opening file");
+        return 0;
+    }
+
+    char buffer[256];
+    ssize_t bytesRead;
+    int student_found = 0;
+
+    while ((bytesRead = read(file_fd, buffer, sizeof(buffer))) > 0)
+    {
+        char *line = strtok(buffer, "\n");
+        while (line != NULL)
+        {
+            struct Student student;
+
+            sscanf(line, "%49[^$]$%49[^$]$%99[^$]$%d$%99[^$]$%99[^$]",student.login_id,student.password, student.name, &student.age, student.email_id, student.address);
+
+            if (strcmp(student.login_id, student_id) == 0)
+            {
+                *result = student;
+                student_found = 1;
+                close(file_fd);
+                return student_found;
+            }
+
+            line = strtok(NULL, "\n");
+        }
+    }
+
+    close(file_fd);
+    return student_found;
+}
+
 int changePassword(struct User users[], const char *username, const char *current_password, const char *new_password)
 {
     for (int i = 0; i < MAX_CLIENTS; i++)
@@ -221,30 +259,72 @@ void *handle_client(void *arg)
             }
             send(client_socket, &auth_status, sizeof(int), 0);
 
-            char admin_menu[200] = "1) Add student\n2) Add Faculty\n3) Activate/Deactivate Student\n4) Update Student/Faculty details\n5) Exit\n";
+            char admin_menu[200] = "1) Add student\n2) View Student Details\n3) Add Faculty\n4) View Faculty Details\n5) Activate Student\n6) Block Student\n7) Modify Student Details\n8) Modify Faculty Details\n9) Exit\n";
             send(client_socket, admin_menu, sizeof(admin_menu), 0);
 
             read(client_socket, &choice, sizeof(int));
 
+            // Add Studednt
             if (choice == 1)
             {
                 // Add Student
-                printf("HERE\n");
                 char buffer[sizeof(struct Student)];
                 recv(client_socket, buffer, sizeof(struct Student), 0);
                 struct Student student_info;
                 memcpy(&student_info, buffer, sizeof(struct Student));
-                printf("%s,%s,%s,%d,%s,%s\n", student_info.login_id, student_info.password, student_info.name, student_info.age, student_info.email_id, student_info.address);
                 write_student_data_to_file(student_info, "data/students_data/student_data.txt");
                 write_stident_log_in_data_to_file(student_info, "data/students_data/student_log_in.txt");
             }
+            // View Student Details
             else if (choice == 2)
             {
+                char give_stu_id[100] = "Enter Student ID: ";
+                send(client_socket, give_stu_id, sizeof(give_stu_id), 0);
+                char find_login_id[50];
+                recv(client_socket, find_login_id, sizeof(find_login_id), 0);
+                struct Student student_info;
+                int stu_found = 0;
+                if (search_student_by_id(find_login_id, "data/students_data/student_data.txt", &student_info))
+                {
+                    stu_found = 1;
+                    send(client_socket, &stu_found, sizeof(int), 0);
+                    char buffer[sizeof(struct Student)];
+                    memcpy(buffer, &student_info, sizeof(struct Student));
+                    send(client_socket, buffer, sizeof(struct Student), 0);
+                }
+                else
+                {
+                    send(client_socket, &stu_found, sizeof(int), 0);
+                    char not_found[30] = "Student Not Found";
+                    send(client_socket, not_found, sizeof(not_found), 0);
+                }
             }
+            // Add Faculty
             else if (choice == 3)
             {
             }
+            // View Faculty Details
             else if (choice == 4)
+            {
+            }
+            // Activate Student
+            else if (choice == 5)
+            {
+            }
+            // Block Student
+            else if (choice == 6)
+            {
+            }
+            // Modify Student Details
+            else if (choice == 7)
+            {
+            }
+            // Moify Faculty Details
+            else if (choice == 8)
+            {
+            }
+            // LogOut and Exit
+            else if (choice == 9)
             {
             }
         }

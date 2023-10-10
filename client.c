@@ -184,8 +184,8 @@ int main()
                 int choice;
                 scanf("%d", &choice);
                 send(client_socket, &choice, sizeof(choice), 0);
-                
-                //Add Student
+
+                // Add Student
                 if (choice == 1)
                 {
                     struct Student student_info;
@@ -210,20 +210,69 @@ int main()
                         printf("Enter Address: ");
                         scanf("%[^\n]", student_info.address);
                         getchar();
-                        printf("%s,%s,%s,%d,%s,%s\n", student_info.login_id, student_info.password, student_info.name, student_info.age, student_info.email_id, student_info.address);
                         char buffer[sizeof(struct Student)];
                         memcpy(buffer, &student_info, sizeof(struct Student));
-
                         send(client_socket, buffer, sizeof(struct Student), 0);
                     }
                 }
+                // View Student Details
                 else if (choice == 2)
                 {
+                    char give_stu_id[100];
+                    recv(client_socket, give_stu_id, sizeof(give_stu_id), 0);
+                    printf("%s", give_stu_id);
+                    char find_login_id[50];
+                    scanf("%s", find_login_id);
+                    send(client_socket, find_login_id, sizeof(find_login_id), 0);
+                    int stu_found;
+                    recv(client_socket, &stu_found, sizeof(int), 0);
+                    if (stu_found)
+                    {
+                        char buffer[sizeof(struct Student)];
+                        recv(client_socket, buffer, sizeof(struct Student), 0);
+                        struct Student student_info;
+                        memcpy(&student_info, buffer, sizeof(struct Student));
+                        printf("Student Details\n");
+                        printf("Student Roll No/Log in ID: %s\n",student_info.login_id);
+                        printf("Student Password: %s\n",student_info.password);
+                        printf("Student Name: %s\n",student_info.name);
+                        printf("Student age: %d\n",student_info.age);
+                        printf("Student Email ID: %s\n",student_info.email_id);
+                        printf("Student Address: %s\n",student_info.address);
+                    }
+                    else
+                    {
+                        char not_found[30];
+                        recv(client_socket,not_found,sizeof(not_found),0);
+                        printf("%s\n",not_found);
+                    }
                 }
+                // Add Faculty
                 else if (choice == 3)
                 {
                 }
+                // View Faculty Details
                 else if (choice == 4)
+                {
+                }
+                // Activate Student
+                else if (choice == 5)
+                {
+                }
+                // Block Student
+                else if (choice == 6)
+                {
+                }
+                // Modify Student Details
+                else if (choice == 7)
+                {
+                }
+                // Moify Faculty Details
+                else if (choice == 8)
+                {
+                }
+                // LogOut and Exit
+                else if (choice == 9)
                 {
                 }
             }
