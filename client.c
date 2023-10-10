@@ -117,7 +117,6 @@ int main()
             send(client_socket, username, sizeof(username), 0);
             send(client_socket, password, sizeof(password), 0);
         }
-
         // student
         if (num == 1)
         {
@@ -133,43 +132,30 @@ int main()
                 scanf("%d", &choice);
                 send(client_socket, &choice, sizeof(int), 0);
 
-                // Enroll to new Courses
+                // View All Courses
                 if (choice == 1)
                 {
                 }
-                // Unenroll from already enrolled Courses
+                // Enroll new Cources
                 else if (choice == 2)
                 {
                 }
-                // View enrolled Courses
+                // Drop Courses
                 else if (choice == 3)
                 {
                 }
-                // Password Change
+                // View Enrolled Course Details
                 else if (choice == 4)
                 {
-                    // printf("Enter Current Password: ");
-                    // scanf("%s", curr_password);
-                    // printf("Enter New Password: ");
-                    // scanf("%s", new_password);
-                    // send(client_socket, &choice, sizeof(int), 0);
-                    // send(client_socket, curr_password, sizeof(curr_password), 0);
-                    // send(client_socket, new_password, sizeof(new_password), 0);
-                    // recv(client_socket, &change_pass_status, sizeof(int), 0);
-                    // if (change_pass_status == 1)
-                    // {
-                    //     printf("succ");
-                    // }
-                    // else
-                    // {
-                    //     printf("again");
-                    // }
                 }
-                // Exit
+                // Change Password
                 else if (choice == 5)
                 {
-                    printf("Signing Out... BYE BYE!!");
-                    return 0;
+                }
+                // Logout and Exit
+                else if (choice == 6)
+                {
+                    exit(0);
                 }
             }
             else
@@ -337,33 +323,6 @@ int main()
                     // Modify Student Details
                     else if (choice == 7)
                     {
-                        // char en_login[45];
-                        // recv(client_socket, en_login, sizeof(en_login), 0);
-                        // printf("%s", en_login);
-                        // char log_in_id[50];
-                        // getchar();
-                        // scanf("%[^\n]", log_in_id);
-                        // send(client_socket, log_in_id, sizeof(log_in_id), 0);
-
-                        // char which_det[50];
-                        // recv(client_socket, which_det, sizeof(which_det), 0);
-                        // printf("%s",which_det);
-                        // char this_detail[15];
-                        // getchar();
-                        // scanf("%[^\n]",this_detail);
-                        // send(client_socket,this_detail,sizeof(this_detail),0);
-
-                        // // getchar();
-                        // char en_nw_det[20];
-                        // recv(client_socket,en_nw_det,sizeof(en_nw_det),0);
-                        // printf("%s",en_nw_det);
-                        // char new_data[120];
-                        // getchar();
-                        // scanf("%[^\n]",new_data);
-                        // send(client_socket,new_data,sizeof(new_data),0);
-                        // char update_status[40];
-                        // recv(client_socket,update_status,sizeof(update_status),0);
-                        // printf("%s\n",update_status);
                         char en_login[45];
                         recv(client_socket, en_login, sizeof(en_login), 0);
                         printf("%s", en_login);
@@ -403,6 +362,7 @@ int main()
                     }
                 }
             }
+            // Authentication fail
             else
             {
                 printf("Authentication failed.\n");
