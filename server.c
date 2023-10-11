@@ -284,11 +284,119 @@ void removeStudentDetails(const char *login_id, const char *filename)
     }
 }
 
+int update_activation_status_login_file(const char *login_id, const char *new_val, const char *filename)
+{
+    int file_fd = open(filename, O_RDWR);
+    if (file_fd < 0)
+    {
+        perror("Error opening file");
+        return 0;
+    }
+    char buffer[256];
+    char new_file_contents[256] = "";
+    ssize_t bytesRead;
+    while ((bytesRead = read(file_fd, buffer, sizeof(buffer))) > 0)
+    {
+        char *line = strtok(buffer, "\n");
+        while (line != NULL)
+        {
+            char stored_login_id[50], password[50], activate_stu[5];
+            sscanf(line, "%49[^$]$%49[^$]$%4[^$]$", stored_login_id, password, activate_stu);
+            if (strcmp(stored_login_id, login_id) == 0)
+            {
+                strncpy(activate_stu, new_val, sizeof(activate_stu));
+            }
+            char updated_line[256];
+            snprintf(updated_line, sizeof(updated_line), "%s$%s$%s$\n", stored_login_id, password, activate_stu);
+            strcat(new_file_contents, updated_line);
+
+            line = strtok(NULL, "\n");
+        }
+    }
+    close(file_fd);
+    file_fd = open(filename, O_WRONLY | O_TRUNC);
+    if (file_fd < 0)
+    {
+        perror("Error reopening file for writing");
+        return 0;
+    }
+    write(file_fd, new_file_contents, strlen(new_file_contents));
+    close(file_fd);
+    return 1;
+}
+
+int change_password(const char *login_id, const char *old_password, const char *new_password)
+{
+    char filename[40] = "data/students_data/student_log_in.txt";
+    int file_fd = open(filename, O_RDWR);
+    if (file_fd < 0)
+    {
+        perror("Error opening file");
+        return 0;
+    }
+    char line[256];
+    ssize_t bytesRead;
+    int student_modified = 0;
+    off_t line_start = 0;
+    while ((bytesRead = read(file_fd, line, sizeof(line) - 1)) > 0)
+    {
+        line[bytesRead] = '\0';
+        char *stored_login_id = strtok(line, "$");
+        char *password = strtok(NULL, "$");
+        char *activation_status = strtok(NULL, "$");
+        if (stored_login_id != NULL && password != NULL && activation_status != NULL)
+        {
+            if (strcmp(stored_login_id, login_id) == 0)
+            {
+                if (strcmp(password, old_password) == 0)
+                {
+                    off_t new_line_start = lseek(file_fd, 0, SEEK_CUR) - bytesRead;
+                    lseek(file_fd, line_start, SEEK_SET);
+                    char updated_line[256];
+                    snprintf(updated_line, sizeof(updated_line), "%s$%s$%s$", stored_login_id, new_password, activation_status);
+                    write(file_fd, updated_line, strlen(updated_line));
+                    lseek(file_fd, new_line_start, SEEK_SET);
+                    student_modified = 1;
+                    break;
+                }
+            }
+        }
+
+        line_start = lseek(file_fd, 0, SEEK_CUR);
+    }
+
+    close(file_fd);
+
+    struct Student result;
+    struct Student new_student;
+    char filename_2[] = "data/students_data/student_data.txt";
+    if (search_student_by_id(login_id, filename_2, &result))
+    {
+        strcpy(new_student.login_id, result.login_id);
+        strcpy(new_student.password, result.password);
+        strcpy(new_student.name, result.name);
+        strcpy(new_student.age, result.age);
+        strcpy(new_student.email_id, result.email_id);
+        strcpy(new_student.address, result.address);
+        strcpy(new_student.activate_stu, result.activate_stu);
+        removeStudentDetails(login_id, filename_2);
+        strcpy(new_student.password, new_password);
+        write_student_data_to_file(new_student, filename_2);
+        student_modified++;
+    }
+    else
+    {
+        student_modified = 0;
+    }
+
+    return student_modified;
+}
+
 int update_student_details(const char *login_id, const char *this_detail, const char *new_data, const char *filename)
 {
     struct Student result;
     struct Student new_student;
-
+    printf("%s,%s,%s\n", login_id, this_detail, new_data);
     if (search_student_by_id(login_id, filename, &result))
     {
         strcpy(new_student.login_id, result.login_id);
@@ -306,8 +414,46 @@ int update_student_details(const char *login_id, const char *this_detail, const 
         }
         else if (strcmp(this_detail, "password") == 0)
         {
+            strcpy(new_student.password, new_data);
+            char filename_2[40] = "data/students_data/student_log_in.txt";
+            int file_fd = open(filename_2, O_RDWR);
+            if (file_fd < 0)
+            {
+                perror("Error opening file");
+                return 0;
+            }
+            char line[256];
+            ssize_t bytesRead;
+            int student_modified = 0;
+            off_t line_start = 0;
+            while ((bytesRead = read(file_fd, line, sizeof(line) - 1)) > 0)
+            {
+                line[bytesRead] = '\0';
+                char *stored_login_id = strtok(line, "$");
+                char *password = strtok(NULL, "$");
+                char *activation_status = strtok(NULL, "$");
+                if (stored_login_id != NULL && password != NULL && activation_status != NULL)
+                {
+                    if (strcmp(stored_login_id, login_id) == 0)
+                    {
+                        if (strcmp(password, new_data) == 0)
+                        {
+                            off_t new_line_start = lseek(file_fd, 0, SEEK_CUR) - bytesRead;
+                            lseek(file_fd, line_start, SEEK_SET);
+                            char updated_line[256];
+                            snprintf(updated_line, sizeof(updated_line), "%s$%s$%s$", stored_login_id, new_data, activation_status);
+                            write(file_fd, updated_line, strlen(updated_line));
+                            lseek(file_fd, new_line_start, SEEK_SET);
+                            student_modified = 1;
+                            break;
+                        }
+                    }
+                }
 
-            // call modify password;
+                line_start = lseek(file_fd, 0, SEEK_CUR);
+            }
+
+            close(file_fd);
             strcpy(new_student.password, new_data);
         }
         else if (strcmp(this_detail, "name") == 0)
@@ -326,8 +472,10 @@ int update_student_details(const char *login_id, const char *this_detail, const 
         {
             strcpy(new_student.address, new_data);
         }
-        else if (strcmp(this_detail, "account status") == 0)
+        else if (strcmp(this_detail, "  status") == 0)
         {
+            printf("%s", new_data);
+            update_activation_status_login_file(login_id, new_data, "data/students_data/student_log_in.txt");
             strcpy(new_student.activate_stu, new_data);
         }
         else
@@ -401,37 +549,22 @@ int update_faculty_details(const char *login_id, const char *this_detail, const 
     }
 }
 
-int changePassword(struct User users[], const char *username, const char *current_password, const char *new_password)
-{
-    for (int i = 0; i < MAX_CLIENTS; i++)
-    {
-        if (strcmp(username, users[i].username) == 0)
-        {
-            if (strcmp(current_password, users[i].password) == 0)
-            {
-                strcpy(users[i].password, new_password);
-                return 1;
-            }
-        }
-    }
-    return 0;
-}
-
 void *handle_client(void *arg)
 {
     int client_socket = *((int *)arg);
     char username[50], password[50];
-    char curr_password[50], new_password[50];
     int num, choice;
-    int auth_status = 0, change_pass_status = 0;
+    int auth_status = 0;
     int users_count;
 
-    char welcome[100] = "Hello! Welcome to the Course Registration Portal\n";
-    char select_role[100] = "Log in As:\n 1) Student\n 2) Faculty\n 3) Admin\n 4) Exit\nEnter your Choice: ";
+    {
+        char welcome[100] = "Hello! Welcome to the Course Registration Portal\n";
+        char select_role[100] = "Log in As:\n 1) Student\n 2) Faculty\n 3) Admin\n 4) Exit\nEnter your Choice: ";
 
-    send(client_socket, welcome, sizeof(welcome), 0);
-    send(client_socket, select_role, sizeof(select_role), 0);
-    recv(client_socket, &num, sizeof(num), 0);
+        send(client_socket, welcome, sizeof(welcome), 0);
+        send(client_socket, select_role, sizeof(select_role), 0);
+        recv(client_socket, &num, sizeof(num), 0);
+    }
 
     if (num == 4)
     {
@@ -440,12 +573,16 @@ void *handle_client(void *arg)
     }
     else
     {
-        char en_username[20] = "Enter username: ";
-        char en_password[20] = "Enter password: ";
-        send(client_socket, en_username, sizeof(en_username), 0);
-        send(client_socket, en_password, sizeof(en_password), 0);
-        read(client_socket, username, sizeof(username));
-        read(client_socket, password, sizeof(password));
+        // Username and Password
+        {
+            char en_username[20] = "Enter username: ";
+            char en_password[20] = "Enter password: ";
+            send(client_socket, en_username, sizeof(en_username), 0);
+            send(client_socket, en_password, sizeof(en_password), 0);
+            read(client_socket, username, sizeof(username));
+            read(client_socket, password, sizeof(password));
+        }
+
         // student Logic
         if (num == 1)
         {
@@ -456,7 +593,7 @@ void *handle_client(void *arg)
             send(client_socket, &auth_status, sizeof(int), 0);
             if (auth_status == 1)
             {
-                char student_menu[200] = "1) Enroll to new Courses\n2) Unenroll from already enrolled Courses\n3) View enrolled Courses\n4) Password Change\n5) Exit\n";
+                char student_menu[200] = "1) View All Courses\n2) Enroll new Cources\n3) Drop Courses\n4) view Enrolled Course Details\n5) Change Password\n6) Logout and Exit\n";
                 while (1)
                 {
                     send(client_socket, student_menu, sizeof(student_menu), 0);
@@ -481,11 +618,30 @@ void *handle_client(void *arg)
                     // Change Password
                     else if (choice == 5)
                     {
+                        char en_old[30] = "Enter Current Password: ";
+                        send(client_socket, en_old, sizeof(en_old), 0);
+                        char old_password[50];
+                        recv(client_socket, old_password, sizeof(old_password), 0);
+
+                        char en_new[30] = "Enter New Password: ";
+                        send(client_socket, en_new, sizeof(en_new), 0);
+                        char new_password[50];
+                        recv(client_socket, new_password, sizeof(new_password), 0);
+
+                        char pass_update_status[50];
+                        if (change_password(username, old_password, new_password))
+                        {
+                            strcpy(pass_update_status, "Password Changed Successfully");
+                        }
+                        else
+                        {
+                            strcpy(pass_update_status, "Check Your Current Password");
+                        }
+                        send(client_socket, pass_update_status, sizeof(pass_update_status), 0);
                     }
                     // Logout and Exit
                     else if (choice == 6)
                     {
-                        break;
                     }
                 }
             }
@@ -595,7 +751,9 @@ void *handle_client(void *arg)
                         char activate_stu_id[50];
                         recv(client_socket, activate_stu_id, sizeof(activate_stu_id), 0);
                         char activation_flag[40];
-                        if (update_student_details(activate_stu_id,"account status","1","data/students_data/student_data.txt"))
+                        char temp_buff[5] = "1";
+                        char temp_buff_status[20] = "account status";
+                        if (update_student_details(activate_stu_id, temp_buff_status, temp_buff, "data/students_data/student_data.txt"))
                         {
                             strcpy(activation_flag, "Student account Activated Successfully");
                         }
@@ -613,7 +771,8 @@ void *handle_client(void *arg)
                         char block_stu_id[50];
                         recv(client_socket, block_stu_id, sizeof(block_stu_id), 0);
                         char activation_flag[40];
-                        if (update_student_details(block_stu_id,"account status","0","data/students_data/student_data.txt"))
+                        char temp_buff[5] = "0";
+                        if (update_student_details(block_stu_id, "account status", temp_buff, "data/students_data/student_data.txt"))
                         {
                             strcpy(activation_flag, "Student account Blocked Successfully");
                         }

@@ -152,13 +152,32 @@ int main()
                 // Change Password
                 else if (choice == 5)
                 {
+                    char en_old[30];
+                    recv(client_socket, en_old, sizeof(en_old), 0);
+                    printf("%s", en_old);
+                    char old_password[50];
+                    getchar();
+                    scanf("%[^\n]", old_password);
+                    send(client_socket, old_password, sizeof(old_password), 0);
+
+                    char en_new[30];
+                    recv(client_socket, en_new, sizeof(en_new), 0);
+                    printf("%s", en_new);
+                    char new_password[50];
+                    scanf("%s", new_password);
+                    send(client_socket, new_password, sizeof(new_password), 0);
+                    
+                    char pass_update_status[50];
+                    recv(client_socket, pass_update_status, sizeof(pass_update_status), 0);
+                    printf("%s\n",pass_update_status);
                 }
-                // Logout and Exit
+                // LogOut and Exit
                 else if (choice == 6)
                 {
                     exit(0);
                 }
             }
+            // Authentication failed Student
             else
             {
                 printf("Authentication failed.\n");
@@ -210,7 +229,7 @@ int main()
                             printf("Enter Address: ");
                             scanf("%[^\n]", student_info.address);
                             getchar();
-                            strcpy(student_info.activate_stu,"1");
+                            strcpy(student_info.activate_stu, "1");
                             char buffer[sizeof(struct Student)];
                             memcpy(buffer, &student_info, sizeof(struct Student));
                             send(client_socket, buffer, sizeof(struct Student), 0);
@@ -327,7 +346,7 @@ int main()
                         send(client_socket, activate_stu_id, sizeof(activate_stu_id), 0);
                         char activation_flag[40];
                         recv(client_socket, activation_flag, sizeof(activation_flag), 0);
-                        printf("%s\n",activation_flag);
+                        printf("%s\n", activation_flag);
                     }
                     // Block Student
                     else if (choice == 6)
@@ -341,7 +360,7 @@ int main()
                         send(client_socket, block_stu_id, sizeof(block_stu_id), 0);
                         char activation_flag[40];
                         recv(client_socket, activation_flag, sizeof(activation_flag), 0);
-                        printf("%s\n",activation_flag);
+                        printf("%s\n", activation_flag);
                     }
                     // Modify Student Details
                     else if (choice == 7)
@@ -412,7 +431,7 @@ int main()
                     }
                 }
             }
-            // Authentication fail
+            // Authentication fail Admin
             else
             {
                 printf("Authentication failed.\n");
