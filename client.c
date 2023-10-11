@@ -14,7 +14,7 @@ struct Student
     char login_id[50];
     char password[50];
     char name[100];
-    int age;
+    char age[10];
     char email_id[100];
     char address[100];
 };
@@ -201,7 +201,7 @@ int main()
                             scanf("%[^\n]", student_info.name);
                             getchar();
                             printf("Enter age: ");
-                            scanf("%d", &student_info.age);
+                            scanf("%[^\n]", student_info.age);
                             getchar();
                             printf("Enter email ID: ");
                             scanf("%[^\n]", student_info.email_id);
@@ -235,7 +235,7 @@ int main()
                             printf("Student Roll No/Log in ID: %s\n", student_info.login_id);
                             printf("Student Password: %s\n", student_info.password);
                             printf("Student Name: %s\n", student_info.name);
-                            printf("Student age: %d\n", student_info.age);
+                            printf("Student age: %s\n", student_info.age);
                             printf("Student Email ID: %s\n", student_info.email_id);
                             printf("Student Address: %s\n", student_info.address);
                         }
@@ -354,6 +354,33 @@ int main()
                     // Moify Faculty Details
                     else if (choice == 8)
                     {
+                        char en_login[45];
+                        recv(client_socket, en_login, sizeof(en_login), 0);
+                        printf("%s", en_login);
+                        char log_in_id[50];
+                        getchar();
+                        scanf(" %[^\n]", log_in_id);
+                        send(client_socket, log_in_id, sizeof(log_in_id), 0);
+
+                        char which_det[50];
+                        recv(client_socket, which_det, sizeof(which_det), 0);
+                        printf("%s", which_det);
+                        char this_detail[15];
+                        getchar();
+                        scanf(" %[^\n]", this_detail);
+                        send(client_socket, this_detail, sizeof(this_detail), 0);
+
+                        char en_nw_det[20];
+                        recv(client_socket, en_nw_det, sizeof(en_nw_det), 0);
+                        printf("%s", en_nw_det);
+                        char new_data[120];
+                        getchar();
+                        scanf(" %[^\n]", new_data);
+                        send(client_socket, new_data, sizeof(new_data), 0);
+
+                        char update_status[40];
+                        recv(client_socket, update_status, sizeof(update_status), 0);
+                        printf("%s\n", update_status);
                     }
                     // LogOut and Exit
                     else if (choice == 9)
