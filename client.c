@@ -17,6 +17,7 @@ struct Student
     char age[10];
     char email_id[100];
     char address[100];
+    char activate_stu[5];
 };
 
 struct Faculty
@@ -209,6 +210,7 @@ int main()
                             printf("Enter Address: ");
                             scanf("%[^\n]", student_info.address);
                             getchar();
+                            strcpy(student_info.activate_stu,"1");
                             char buffer[sizeof(struct Student)];
                             memcpy(buffer, &student_info, sizeof(struct Student));
                             send(client_socket, buffer, sizeof(struct Student), 0);
@@ -238,6 +240,7 @@ int main()
                             printf("Student age: %s\n", student_info.age);
                             printf("Student Email ID: %s\n", student_info.email_id);
                             printf("Student Address: %s\n", student_info.address);
+                            printf("Account Status: %s\n", student_info.activate_stu);
                         }
                         else
                         {
@@ -315,10 +318,30 @@ int main()
                     // Activate Student
                     else if (choice == 5)
                     {
+                        char en_stu_id[25];
+                        recv(client_socket, en_stu_id, sizeof(en_stu_id), 0);
+                        printf("%s", en_stu_id);
+                        getchar();
+                        char activate_stu_id[50];
+                        scanf("%[^\n]", activate_stu_id);
+                        send(client_socket, activate_stu_id, sizeof(activate_stu_id), 0);
+                        char activation_flag[40];
+                        recv(client_socket, activation_flag, sizeof(activation_flag), 0);
+                        printf("%s\n",activation_flag);
                     }
                     // Block Student
                     else if (choice == 6)
                     {
+                        char en_stu_id[25];
+                        recv(client_socket, en_stu_id, sizeof(en_stu_id), 0);
+                        printf("%s", en_stu_id);
+                        getchar();
+                        char block_stu_id[50];
+                        scanf("%[^\n]", block_stu_id);
+                        send(client_socket, block_stu_id, sizeof(block_stu_id), 0);
+                        char activation_flag[40];
+                        recv(client_socket, activation_flag, sizeof(activation_flag), 0);
+                        printf("%s\n",activation_flag);
                     }
                     // Modify Student Details
                     else if (choice == 7)

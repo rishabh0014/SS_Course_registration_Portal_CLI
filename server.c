@@ -26,6 +26,7 @@ struct Student
     char age[10];
     char email_id[100];
     char address[100];
+    char activate_stu[5];
 };
 
 struct Faculty
@@ -49,13 +50,14 @@ void write_student_data_to_file(struct Student student, const char *filename)
     }
 
     char buffer[512];
-    snprintf(buffer, sizeof(buffer), "%s$%s$%s$%s$%s$%s$\n",
+    snprintf(buffer, sizeof(buffer), "%s$%s$%s$%s$%s$%s$%s$\n",
              student.login_id,
              student.password,
              student.name,
              student.age,
              student.email_id,
-             student.address);
+             student.address,
+             student.activate_stu);
 
     write(file_fd, buffer, strlen(buffer));
     close(file_fd);
@@ -71,7 +73,7 @@ void write_student_log_in_data_to_file(struct Student student, const char *filen
     }
 
     char buffer[120];
-    snprintf(buffer, sizeof(buffer), "%s$%s\n", student.login_id, student.password);
+    snprintf(buffer, sizeof(buffer), "%s$%s$%s\n", student.login_id, student.password, student.activate_stu);
     write(file_fd, buffer, strlen(buffer));
     close(file_fd);
 }
@@ -132,21 +134,22 @@ int readUsersFromFile(const char *username, const char *password, const char *fi
         char *line = strtok(buffer, "\n");
         while (line != NULL)
         {
-            char stored_username[50], stored_password[50];
+            char stored_username[50], stored_password[50], stored_activate_stu[5];
 
-            sscanf(line, "%49[^$]$%49[^$]$", stored_username, stored_password);
+            sscanf(line, "%49[^$]$%49[^$]$%4[^$]", stored_username, stored_password, stored_activate_stu);
 
             if (strcmp(stored_username, username) == 0 && strcmp(stored_password, password) == 0)
             {
-                auth_status = 1;
-                close(file_fd);
-                return auth_status;
+                if (strcmp(stored_activate_stu, "1") == 0)
+                {
+                    auth_status = 1;
+                    close(file_fd);
+                    return auth_status;
+                }
             }
-
             line = strtok(NULL, "\n");
         }
     }
-
     close(file_fd);
     return auth_status;
 }
@@ -171,7 +174,7 @@ int search_student_by_id(const char *student_id, const char *filename, struct St
         {
             struct Student student;
 
-            sscanf(line, "%49[^$]$%49[^$]$%99[^$]$%9[^$]$%99[^$]$%99[^$]", student.login_id, student.password, student.name, student.age, student.email_id, student.address);
+            sscanf(line, "%49[^$]$%49[^$]$%99[^$]$%9[^$]$%99[^$]$%99[^$]$%4[^$]", student.login_id, student.password, student.name, student.age, student.email_id, student.address, student.activate_stu);
             if (strcmp(student.login_id, student_id) == 0)
             {
                 *result = student;
@@ -179,11 +182,9 @@ int search_student_by_id(const char *student_id, const char *filename, struct St
                 close(file_fd);
                 return student_found;
             }
-
             line = strtok(NULL, "\n");
         }
     }
-
     close(file_fd);
     return student_found;
 }
@@ -257,7 +258,6 @@ void removeStudentDetails(const char *login_id, const char *filename)
             }
             else
             {
-                // Copy the line to the temporary file
                 fputs(line, tempFile);
             }
         }
@@ -268,7 +268,6 @@ void removeStudentDetails(const char *login_id, const char *filename)
 
     if (found)
     {
-        // Replace the original file with the temporary file
         if (remove(filename) != 0)
         {
             perror("Error removing original file");
@@ -280,7 +279,6 @@ void removeStudentDetails(const char *login_id, const char *filename)
     }
     else
     {
-        // If no match was found, remove the temporary file
         remove("tempfile.txt");
         printf("No student with login ID %s found.\n", login_id);
     }
@@ -299,6 +297,7 @@ int update_student_details(const char *login_id, const char *this_detail, const 
         strcpy(new_student.age, result.age);
         strcpy(new_student.email_id, result.email_id);
         strcpy(new_student.address, result.address);
+        strcpy(new_student.activate_stu, result.activate_stu);
         removeStudentDetails(login_id, filename);
         if (strcmp(this_detail, "login id") == 0)
         {
@@ -326,6 +325,10 @@ int update_student_details(const char *login_id, const char *this_detail, const 
         else if (strcmp(this_detail, "address") == 0)
         {
             strcpy(new_student.address, new_data);
+        }
+        else if (strcmp(this_detail, "account status") == 0)
+        {
+            strcpy(new_student.activate_stu, new_data);
         }
         else
         {
@@ -510,7 +513,7 @@ void *handle_client(void *arg)
             send(client_socket, &auth_status, sizeof(int), 0);
             if (auth_status == 1)
             {
-                char admin_menu[200] = "1) Add student\n2) View Student Details\n3) Add Faculty\n4) View Faculty Details\n5) Activate Student\n6) Block Student\n7) Modify Student Details\n8) Modify Faculty Details\n9) Exit\n";
+                char admin_menu[200] = "1) Add student\n2) View Student Details\n3) Add Faculty\n4) View Faculty Details\n5) Activate Student\n6) Block Student\n7) Modify Student Details\n8) Modify Faculty Details\n9) Exit\nEnter Your Choice: ";
                 while (1)
                 {
                     send(client_socket, admin_menu, sizeof(admin_menu), 0);
@@ -587,10 +590,38 @@ void *handle_client(void *arg)
                     // Activate Student
                     else if (choice == 5)
                     {
+                        char en_stu_id[25] = "Enter Student ID: ";
+                        send(client_socket, en_stu_id, sizeof(en_stu_id), 0);
+                        char activate_stu_id[50];
+                        recv(client_socket, activate_stu_id, sizeof(activate_stu_id), 0);
+                        char activation_flag[40];
+                        if (update_student_details(activate_stu_id,"account status","1","data/students_data/student_data.txt"))
+                        {
+                            strcpy(activation_flag, "Student account Activated Successfully");
+                        }
+                        else
+                        {
+                            strcpy(activation_flag, "Student ID not found");
+                        }
+                        send(client_socket, activation_flag, sizeof(activation_flag), 0);
                     }
                     // Block Student
                     else if (choice == 6)
                     {
+                        char en_stu_id[25] = "Enter Student ID: ";
+                        send(client_socket, en_stu_id, sizeof(en_stu_id), 0);
+                        char block_stu_id[50];
+                        recv(client_socket, block_stu_id, sizeof(block_stu_id), 0);
+                        char activation_flag[40];
+                        if (update_student_details(block_stu_id,"account status","0","data/students_data/student_data.txt"))
+                        {
+                            strcpy(activation_flag, "Student account Blocked Successfully");
+                        }
+                        else
+                        {
+                            strcpy(activation_flag, "Student ID not found");
+                        }
+                        send(client_socket, activation_flag, sizeof(activation_flag), 0);
                     }
                     // Modify Student Details
                     else if (choice == 7)
