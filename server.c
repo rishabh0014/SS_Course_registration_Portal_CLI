@@ -367,28 +367,6 @@ int change_password(const char *login_id, const char *old_password, const char *
 
     close(file_fd);
 
-    struct Student result;
-    struct Student new_student;
-    char filename_2[] = "data/students_data/student_data.txt";
-    if (search_student_by_id(login_id, filename_2, &result))
-    {
-        strcpy(new_student.login_id, result.login_id);
-        strcpy(new_student.password, result.password);
-        strcpy(new_student.name, result.name);
-        strcpy(new_student.age, result.age);
-        strcpy(new_student.email_id, result.email_id);
-        strcpy(new_student.address, result.address);
-        strcpy(new_student.activate_stu, result.activate_stu);
-        removeStudentDetails(login_id, filename_2);
-        strcpy(new_student.password, new_password);
-        write_student_data_to_file(new_student, filename_2);
-        student_modified++;
-    }
-    else
-    {
-        student_modified = 0;
-    }
-
     return student_modified;
 }
 
@@ -396,7 +374,6 @@ int update_student_details(const char *login_id, const char *this_detail, const 
 {
     struct Student result;
     struct Student new_student;
-    printf("%s,%s,%s\n", login_id, this_detail, new_data);
     if (search_student_by_id(login_id, filename, &result))
     {
         strcpy(new_student.login_id, result.login_id);
@@ -415,46 +392,7 @@ int update_student_details(const char *login_id, const char *this_detail, const 
         else if (strcmp(this_detail, "password") == 0)
         {
             strcpy(new_student.password, new_data);
-            char filename_2[40] = "data/students_data/student_log_in.txt";
-            int file_fd = open(filename_2, O_RDWR);
-            if (file_fd < 0)
-            {
-                perror("Error opening file");
-                return 0;
-            }
-            char line[256];
-            ssize_t bytesRead;
-            int student_modified = 0;
-            off_t line_start = 0;
-            while ((bytesRead = read(file_fd, line, sizeof(line) - 1)) > 0)
-            {
-                line[bytesRead] = '\0';
-                char *stored_login_id = strtok(line, "$");
-                char *password = strtok(NULL, "$");
-                char *activation_status = strtok(NULL, "$");
-                if (stored_login_id != NULL && password != NULL && activation_status != NULL)
-                {
-                    if (strcmp(stored_login_id, login_id) == 0)
-                    {
-                        if (strcmp(password, new_data) == 0)
-                        {
-                            off_t new_line_start = lseek(file_fd, 0, SEEK_CUR) - bytesRead;
-                            lseek(file_fd, line_start, SEEK_SET);
-                            char updated_line[256];
-                            snprintf(updated_line, sizeof(updated_line), "%s$%s$%s$", stored_login_id, new_data, activation_status);
-                            write(file_fd, updated_line, strlen(updated_line));
-                            lseek(file_fd, new_line_start, SEEK_SET);
-                            student_modified = 1;
-                            break;
-                        }
-                    }
-                }
-
-                line_start = lseek(file_fd, 0, SEEK_CUR);
-            }
-
-            close(file_fd);
-            strcpy(new_student.password, new_data);
+            change_password(login_id, result.password, new_data);
         }
         else if (strcmp(this_detail, "name") == 0)
         {
@@ -629,7 +567,9 @@ void *handle_client(void *arg)
                         recv(client_socket, new_password, sizeof(new_password), 0);
 
                         char pass_update_status[50];
-                        if (change_password(username, old_password, new_password))
+                        char temp_this_detail[30] = "password";
+
+                        if (change_password(username, old_password, new_password) && update_student_details(username, temp_this_detail, new_password, "data/students_data/student_data.txt"))
                         {
                             strcpy(pass_update_status, "Password Changed Successfully");
                         }
@@ -642,6 +582,7 @@ void *handle_client(void *arg)
                     // Logout and Exit
                     else if (choice == 6)
                     {
+                        break;
                     }
                 }
             }

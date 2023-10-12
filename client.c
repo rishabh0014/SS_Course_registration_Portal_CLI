@@ -127,54 +127,58 @@ int main()
                 printf("Authentication successful!\n");
                 printf("Hello, %s! Welcome..\n", username);
                 char student_menu[200];
-                recv(client_socket, student_menu, sizeof(student_menu), 0);
-                printf("%s", student_menu);
-                int choice;
-                scanf("%d", &choice);
-                send(client_socket, &choice, sizeof(int), 0);
+                while (1)
+                {
+                    recv(client_socket, student_menu, sizeof(student_menu), 0);
+                    printf("%s", student_menu);
+                    int choice;
 
-                // View All Courses
-                if (choice == 1)
-                {
-                }
-                // Enroll new Cources
-                else if (choice == 2)
-                {
-                }
-                // Drop Courses
-                else if (choice == 3)
-                {
-                }
-                // View Enrolled Course Details
-                else if (choice == 4)
-                {
-                }
-                // Change Password
-                else if (choice == 5)
-                {
-                    char en_old[30];
-                    recv(client_socket, en_old, sizeof(en_old), 0);
-                    printf("%s", en_old);
-                    char old_password[50];
-                    getchar();
-                    scanf("%[^\n]", old_password);
-                    send(client_socket, old_password, sizeof(old_password), 0);
+                    scanf("%d", &choice);
+                    send(client_socket, &choice, sizeof(int), 0);
 
-                    char en_new[30];
-                    recv(client_socket, en_new, sizeof(en_new), 0);
-                    printf("%s", en_new);
-                    char new_password[50];
-                    scanf("%s", new_password);
-                    send(client_socket, new_password, sizeof(new_password), 0);
-                    
-                    char pass_update_status[50];
-                    recv(client_socket, pass_update_status, sizeof(pass_update_status), 0);
-                    printf("%s\n",pass_update_status);
-                }
-                // LogOut and Exit
-                else if (choice == 6)
-                {
-                    exit(0);
+                    // View All Courses
+                    if (choice == 1)
+                    {
+                    }
+                    // Enroll new Cources
+                    else if (choice == 2)
+                    {
+                    }
+                    // Drop Courses
+                    else if (choice == 3)
+                    {
+                    }
+                    // View Enrolled Course Details
+                    else if (choice == 4)
+                    {
+                    }
+                    // Change Password
+                    else if (choice == 5)
+                    {
+                        char en_old[30];
+                        recv(client_socket, en_old, sizeof(en_old), 0);
+                        printf("%s", en_old);
+                        char old_password[50];
+                        getchar();
+                        scanf("%[^\n]", old_password);
+                        send(client_socket, old_password, sizeof(old_password), 0);
+
+                        char en_new[30];
+                        recv(client_socket, en_new, sizeof(en_new), 0);
+                        printf("%s", en_new);
+                        char new_password[50];
+                        scanf("%s", new_password);
+                        send(client_socket, new_password, sizeof(new_password), 0);
+
+                        char pass_update_status[50];
+                        recv(client_socket, pass_update_status, sizeof(pass_update_status), 0);
+                        printf("%s\n", pass_update_status);
+                    }
+                    // LogOut and Exit
+                    else if (choice == 6)
+                    {
+                        exit(0);
+                    }
                 }
             }
             // Authentication failed Student
