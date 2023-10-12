@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "typeinfo": "c"
+        "all_header.h": "c",
+        "admin.h": "c",
+        "general_fun.h": "c"
     }
 }

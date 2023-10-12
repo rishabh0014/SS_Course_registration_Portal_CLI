@@ -1,44 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <termios.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include<ctype.h>
-
-#define PORT 8080
-
-struct Student
-{
-    char login_id[50];
-    char password[50];
-    char name[100];
-    char age[10];
-    char email_id[100];
-    char address[100];
-    char activate_stu[5];
-};
-
-struct Faculty
-{
-    char login_id[50];
-    char password[50];
-    char name[100];
-    char department[50];
-    char designation[50];
-    char email_id[100];
-    char address[100];
-};
-
-struct Course
-{
-    char course_id[20];
-    char course_name[30];
-    char faculty_id[50];
-    char seats[20];
-};
+#include "my_headers/all_header.h"
 
 // General Functionality
 void hide_password(char *password, int max_length)
@@ -48,10 +8,8 @@ void hide_password(char *password, int max_length)
     new_term = old_term;
     new_term.c_lflag &= ~(ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &new_term);
-
     int i = 0;
     char ch;
-
     while (1)
     {
         ch = getchar();
@@ -62,7 +20,6 @@ void hide_password(char *password, int max_length)
         password[i] = ch;
         i++;
     }
-
     password[i] = '\0';
     tcsetattr(STDIN_FILENO, TCSANOW, &old_term);
     printf("\n");
@@ -70,8 +27,10 @@ void hide_password(char *password, int max_length)
 
 void remove_new_line(char *str)
 {
-    if (str != NULL && *str == '\n') {
-        while (*str != '\0') {
+    if (str != NULL && *str == '\n')
+    {
+        while (*str != '\0')
+        {
             *str = *(str + 1);
             str++;
         }
@@ -83,7 +42,7 @@ int main()
     int client_socket, num;
     struct sockaddr_in server_addr;
     int auth_status, change_pass_status;
-    char username[50], password[50], curr_password[50], new_password[50], welcome[100], select_role[100], en_username[20], en_password[20];
+    char username[50], password[50], curr_password[50], new_password[50], welcome[100], select_role[100], en_username[20], en_password[20], auth_succ_fail[40];
 
     // socket
     {
@@ -143,7 +102,8 @@ int main()
             recv(client_socket, &auth_status, sizeof(int), 0);
             if (auth_status == 1)
             {
-                printf("Authentication successful!\n");
+                recv(client_socket,auth_succ_fail,sizeof(auth_succ_fail),0);
+                printf("%s\n",auth_succ_fail);
                 printf("Hello, %s! Welcome..\n", username);
                 char student_menu[200];
                 while (1)
@@ -175,11 +135,13 @@ int main()
                                 remove_new_line(course_detail.course_id);
                                 remove_new_line(course_detail.course_name);
                                 remove_new_line(course_detail.faculty_id);
-                                remove_new_line(course_detail.seats);
+                                remove_new_line(course_detail.max_seats);
+                                remove_new_line(course_detail.rem_seats);
                                 printf("Course ID: %s\n", course_detail.course_id);
                                 printf("Course Name: %s\n", course_detail.course_name);
                                 printf("Faculty ID: %s\n", course_detail.faculty_id);
-                                printf("Seats: %s\n", course_detail.seats);
+                                printf("Seats: %s\n", course_detail.max_seats);
+                                printf("Remaining Seats: %s\n", course_detail.rem_seats);
                                 printf("\n");
                             }
                         }
@@ -191,7 +153,6 @@ int main()
                     // Drop Courses
                     else if (choice == 3)
                     {
-                        
                     }
                     // View Enrolled Course Details
                     else if (choice == 4)
@@ -227,9 +188,9 @@ int main()
                 }
             }
             // Authentication failed Student
-            else
-            {
-                printf("Authentication failed.\n");
+            else{
+                recv(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
+                printf("%s\n",auth_succ_fail);
             }
         }
         // faculty
@@ -238,7 +199,8 @@ int main()
             recv(client_socket, &auth_status, sizeof(int), 0);
             if (auth_status == 1)
             {
-                printf("Authentication successful!\n");
+                recv(client_socket,auth_succ_fail,sizeof(auth_succ_fail),0);
+                printf("%s\n",auth_succ_fail);
                 printf("Hello, %s! Welcome..\n", username);
                 char faculty_menu[200];
                 while (1)
@@ -263,17 +225,21 @@ int main()
                             recv(client_socket, &total_course, sizeof(int), 0);
 
                             struct Course course_detail;
-                            for (int i = 1; i <= total_course; i++)
+                            for (int i = 0; i < total_course - 1; i++)
                             {
                                 recv(client_socket, &course_detail, sizeof(course_detail), 0);
                                 remove_new_line(course_detail.course_id);
                                 remove_new_line(course_detail.course_name);
                                 remove_new_line(course_detail.faculty_id);
-                                remove_new_line(course_detail.seats);
+                                remove_new_line(course_detail.max_seats);
+                                remove_new_line(course_detail.rem_seats);
+                                if (sizeof(course_detail.course_id) - 1 == 0)
+                                    continue;
                                 printf("Course ID: %s\n", course_detail.course_id);
                                 printf("Course Name: %s\n", course_detail.course_name);
                                 printf("Faculty ID: %s\n", course_detail.faculty_id);
-                                printf("Seats: %s\n", course_detail.seats);
+                                printf("Seats: %s\n", course_detail.max_seats);
+                                printf("Remaining Seats: %s\n", course_detail.rem_seats);
                                 printf("\n");
                             }
                         }
@@ -301,14 +267,6 @@ int main()
                         scanf("%[^\n]", new_course_name);
                         send(client_socket, new_course_name, sizeof(new_course_name), 0);
 
-                        char en_faculty_id[30];
-                        recv(client_socket, en_faculty_id, sizeof(en_faculty_id), 0);
-                        printf("%s", en_faculty_id);
-                        char new_faculty_id[50];
-                        getchar();
-                        scanf("%[^\n]", new_faculty_id);
-                        send(client_socket, new_faculty_id, sizeof(new_faculty_id), 0);
-
                         char en_number_seats[30];
                         recv(client_socket, en_number_seats, sizeof(en_number_seats), 0);
                         printf("%s", en_number_seats);
@@ -325,15 +283,15 @@ int main()
                     else if (choice == 3)
                     {
                         char en_course_id[30];
-                        recv(client_socket,en_course_id,sizeof(en_course_id),0);
-                        printf("%s\n",en_course_id);
+                        recv(client_socket, en_course_id, sizeof(en_course_id), 0);
+                        printf("%s\n", en_course_id);
                         char take_course_id[20];
                         getchar();
-                        scanf("%[^\n]",take_course_id);
-                        send(client_socket,take_course_id,sizeof(take_course_id),0);
+                        scanf("%[^\n]", take_course_id);
+                        send(client_socket, take_course_id, sizeof(take_course_id), 0);
                         char remove_status[30];
-                        recv(client_socket,remove_status,sizeof(remove_status),0);
-                        printf("%s\n",remove_status);
+                        recv(client_socket, remove_status, sizeof(remove_status), 0);
+                        printf("%s\n", remove_status);
                     }
                     // Update Course Details
                     else if (choice == 4)
@@ -394,10 +352,11 @@ int main()
                     }
                 }
             }
-            // Authentication failed Student
+            // Authentication failed Faculty
             else
             {
-                printf("Authentication failed.\n");
+                recv(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
+                printf("%s\n",auth_succ_fail);
             }
         }
         // admin
@@ -406,7 +365,9 @@ int main()
             recv(client_socket, &auth_status, sizeof(int), 0);
             if (auth_status == 1)
             {
-                printf("Authentication successful!\n");
+                recv(client_socket,auth_succ_fail,sizeof(auth_succ_fail),0);
+                printf("%s\n",auth_succ_fail);
+
                 printf("Hello, %s! Welcome..\n", username);
                 char admin_menu[200];
                 while (1)
@@ -647,7 +608,8 @@ int main()
             // Authentication fail Admin
             else
             {
-                printf("Authentication failed.\n");
+                recv(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
+                printf("%s\n",auth_succ_fail);
             }
         }
     }

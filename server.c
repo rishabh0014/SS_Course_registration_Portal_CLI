@@ -1,55 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/sendfile.h>
-
-#define PORT 8080
-#define MAX_CLIENTS 10
-#define MAX_COURSES 50
-
-int clients_count = 0;
-
-struct User
-{
-    char username[50];
-    char password[50];
-    int num;
-};
-
-struct Student
-{
-    char login_id[50];
-    char password[50];
-    char name[100];
-    char age[10];
-    char email_id[100];
-    char address[100];
-    char activate_stu[5];
-};
-
-struct Faculty
-{
-    char login_id[50];
-    char password[50];
-    char name[100];
-    char department[50];
-    char designation[50];
-    char email_id[100];
-    char address[100];
-};
-
-struct Course
-{
-    char course_id[20];
-    char course_name[30];
-    char faculty_id[50];
-    char seats[20];
-};
+#include "my_headers/all_header.h"
 
 void write_student_data_to_file(struct Student student, const char *filename)
 {
@@ -122,7 +71,7 @@ void write_faculty_log_in_data_to_file(struct Faculty faculty, const char *filen
     }
 
     char buffer[120];
-    char temp[5];
+    char temp[5] = "1";
     snprintf(buffer, sizeof(buffer), "%s$%s$%s$\n", faculty.login_id, faculty.password, temp);
     write(file_fd, buffer, strlen(buffer));
     close(file_fd);
@@ -403,7 +352,7 @@ int update_student_details(const char *login_id, const char *this_detail, const 
         else if (strcmp(this_detail, "password") == 0)
         {
             strcpy(new_student.password, new_data);
-            change_password(login_id, result.password, new_data,filename);
+            change_password(login_id, result.password, new_data, filename);
         }
         else if (strcmp(this_detail, "name") == 0)
         {
@@ -509,11 +458,12 @@ int write_course_data_to_file(struct Course add_course, const char *filename)
     }
     int succ = 0;
     char buffer[512];
-    snprintf(buffer, sizeof(buffer), "%s$%s$%s$%s$\n",
+    snprintf(buffer, sizeof(buffer), "%s$%s$%s$%s$%s$\n",
              add_course.course_id,
              add_course.course_name,
              add_course.faculty_id,
-             add_course.seats);
+             add_course.max_seats,
+             add_course.rem_seats);
 
     if (write(file_fd, buffer, strlen(buffer)))
     {
@@ -555,7 +505,12 @@ int view_all_courses(struct Course all_courses[], const char *filename)
             }
             if (token != NULL)
             {
-                strncpy(all_courses[count].seats, token, sizeof(all_courses[count].seats) - 1);
+                strncpy(all_courses[count].max_seats, token, sizeof(all_courses[count].max_seats) - 1);
+                token = strtok(NULL, "$");
+            }
+            if (token != NULL)
+            {
+                strncpy(all_courses[count].rem_seats, token, sizeof(all_courses[count].rem_seats) - 1);
                 token = strtok(NULL, "$");
             }
             count++;
@@ -566,7 +521,60 @@ int view_all_courses(struct Course all_courses[], const char *filename)
     return count;
 }
 
-int remove_course_from_catalog(const char *take_course_id, const char *filename)
+int view_offering_courses(struct Course all_courses[], const char *filename, const char *faculty_id)
+{
+    int file_fd = open(filename, O_RDONLY);
+    if (file_fd < 0)
+    {
+        perror("Error opening file");
+        return 0;
+    }
+
+    int count = 0;
+    char buffer[256];
+    ssize_t bytesRead;
+
+    while ((bytesRead = read(file_fd, buffer, sizeof(buffer))) > 0)
+    {
+        char *token = strtok(buffer, "$");
+        struct Course curr_course;
+        while (token != NULL)
+        {
+            strncpy(curr_course.course_id, token, sizeof(curr_course.course_id) - 1);
+            token = strtok(NULL, "$");
+            if (token != NULL)
+            {
+                strncpy(curr_course.course_name, token, sizeof(curr_course.course_name) - 1);
+                token = strtok(NULL, "$");
+            }
+            if (token != NULL)
+            {
+                strncpy(curr_course.faculty_id, token, sizeof(curr_course.faculty_id) - 1);
+                token = strtok(NULL, "$");
+            }
+            if (token != NULL)
+            {
+                strncpy(curr_course.max_seats, token, sizeof(curr_course.max_seats) - 1);
+                token = strtok(NULL, "$");
+            }
+            if (token != NULL)
+            {
+                strncpy(curr_course.rem_seats, token, sizeof(curr_course.rem_seats) - 1);
+                token = strtok(NULL, "$");
+            }
+            if (strcmp(curr_course.faculty_id, faculty_id) == 0)
+            {
+                all_courses[count] = curr_course;
+                count++;
+            }
+        }
+    }
+
+    close(file_fd);
+    return count;
+}
+
+int remove_course_from_catalog(const char *take_course_id, const char *filename, const char *faculty_id)
 {
     FILE *originalFile = fopen(filename, "r");
     if (originalFile == NULL)
@@ -586,10 +594,10 @@ int remove_course_from_catalog(const char *take_course_id, const char *filename)
 
     while (fgets(line, sizeof(line), originalFile) != NULL)
     {
-        char stored_login_id[20];
-        if (sscanf(line, "%19[^$]$", stored_login_id) == 1)
+        struct Course current_course;
+        if (sscanf(line, "%19[^$]$%29[^$]$%49[^$]$%19[^$]$%19[^$]$", current_course.course_id, current_course.course_name, current_course.faculty_id, current_course.max_seats, current_course.rem_seats) == 5)
         {
-            if (strcmp(stored_login_id, take_course_id) == 0)
+            if (strcmp(current_course.faculty_id, faculty_id) == 0 && strcmp(current_course.course_id, take_course_id) == 0)
             {
                 found = 1;
             }
@@ -642,7 +650,7 @@ int search_course_by_id(const char *course_id, const char *filename, struct Cour
         {
             struct Course course;
 
-            sscanf(line, "%19[^$]$%29[^$]$%49[^$]$%19[^$]", course.course_id, course.course_name, course.faculty_id, course.seats);
+            sscanf(line, "%19[^$]$%29[^$]$%49[^$]$%19[^$]$%19[^$]", course.course_id, course.course_name, course.faculty_id, course.max_seats, course.rem_seats);
             if (strcmp(course.course_id, course_id) == 0)
             {
                 *result = course;
@@ -657,41 +665,56 @@ int search_course_by_id(const char *course_id, const char *filename, struct Cour
     return course_found;
 }
 
-int update_course_details(const char *course_id, const char *this_detail, const char *new_data, const char *filename)
+int update_course_details(const char *course_id, const char *this_detail, const char *new_data, const char *filename, const char *faculty_id)
 {
 
-    struct Course result;
+    // struct Course result;
     struct Course new_course;
-    if (search_course_by_id(course_id, filename, &result))
+    if (search_course_by_id(course_id, filename, &new_course))
     {
-        strcpy(new_course.course_id, result.course_id);
-        strcpy(new_course.course_name, result.course_name);
-        strcpy(new_course.faculty_id, result.faculty_id);
-        strcpy(new_course.seats, result.seats);
-        remove_course_from_catalog(course_id, filename);
-        if (strcmp(this_detail, "course id") == 0)
+        if (strcmp(new_course.faculty_id, faculty_id) == 0)
         {
+            // strcpy(new_course.course_id, result.course_id);
+            // strcpy(new_course.course_name, result.course_name);
+            // strcpy(new_course.faculty_id, result.faculty_id);
+            // strcpy(new_course.max_seats, result.max_seats);
+            // strcpy(new_course.rem_seats, result.rem_seats);
+            remove_course_from_catalog(course_id, filename, faculty_id);
+            if (strcmp(faculty_id, new_course.faculty_id) == 0)
+            {
+                if (strcmp(this_detail, "course id") == 0)
+                {
+                    write_course_data_to_file(new_course, filename);
+                    return 0;
+                }
+                else if (strcmp(this_detail, "course name") == 0)
+                {
+                    strcpy(new_course.course_name, new_data);
+                }
+                else if (strcmp(this_detail, "faculty id") == 0)
+                {
+                    strcpy(new_course.faculty_id, new_data);
+                }
+                else if (strcmp(this_detail, "maximum seats") == 0)
+                {
+                    strcpy(new_course.max_seats, new_data);
+                }
+                else if (strcmp(this_detail, "remaining seats") == 0)
+                {
+                    strcpy(new_course.rem_seats, new_data);
+                }
+                else
+                {
+                    return 0;
+                }
+            }
             write_course_data_to_file(new_course, filename);
-            return 0;
-        }
-        else if (strcmp(this_detail, "course name") == 0)
-        {
-            strcpy(new_course.course_name, new_data);
-        }
-        else if (strcmp(this_detail, "faculty id") == 0)
-        {
-            strcpy(new_course.faculty_id, new_data);
-        }
-        else if (strcmp(this_detail, "seats") == 0)
-        {
-            strcpy(new_course.seats, new_data);
+            return 1;
         }
         else
         {
             return 0;
         }
-        write_course_data_to_file(new_course, filename);
-        return 1;
     }
     else
     {
@@ -706,7 +729,7 @@ void *handle_client(void *arg)
     int num, choice;
     int auth_status = 0;
     int users_count;
-
+    char auth_succ_fail[40];
     {
         char welcome[100] = "Hello! Welcome to the Course Registration Portal\n";
         char select_role[100] = "Log in As:\n 1) Student\n 2) Faculty\n 3) Admin\n 4) Exit\nEnter your Choice: ";
@@ -743,6 +766,8 @@ void *handle_client(void *arg)
             send(client_socket, &auth_status, sizeof(int), 0);
             if (auth_status == 1)
             {
+                strcpy(auth_succ_fail , "Log in Successful");
+                send(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
                 char student_menu[200] = "1) View All Courses\n2) Enroll new Cources\n3) Drop Courses\n4) view Enrolled Course Details\n5) Change Password\n6) Logout and Exit\n";
                 while (1)
                 {
@@ -797,7 +822,7 @@ void *handle_client(void *arg)
                         char pass_update_status[50];
                         char temp_this_detail[30] = "password";
 
-                        if (change_password(username, old_password, new_password,"data/students_data/student_log_in.txt") && update_student_details(username, temp_this_detail, new_password, "data/students_data/student_data.txt"))
+                        if (change_password(username, old_password, new_password, "data/students_data/student_log_in.txt") && update_student_details(username, temp_this_detail, new_password, "data/students_data/student_data.txt"))
                         {
                             strcpy(pass_update_status, "Password Changed Successfully");
                         }
@@ -816,7 +841,8 @@ void *handle_client(void *arg)
             }
             else
             {
-                // authentication fail
+                strcpy(auth_succ_fail ,"Wrong Login ID/Username or Password!!");
+                send(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
             }
         }
         // faculty logic
@@ -829,6 +855,8 @@ void *handle_client(void *arg)
             send(client_socket, &auth_status, sizeof(int), 0);
             if (auth_status == 1)
             {
+                strcpy(auth_succ_fail , "Log in Successful");
+                send(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
                 char faculty_menu[200] = "1) View All Courses\n2) Add new Cources\n3) Remove Courses from Catalog\n4) Update Course Details\n5) Change Password\n6) Logout and Exit\n";
                 while (1)
                 {
@@ -846,10 +874,10 @@ void *handle_client(void *arg)
                             struct Course all_courses[MAX_COURSES];
                             char list_of_all[30] = "List of all Courses";
                             send(client_socket, list_of_all, sizeof(list_of_all), 0);
-                            int total_course = view_all_courses(all_courses, filename);
+                            int total_course = view_offering_courses(all_courses, filename, username);
                             send(client_socket, &total_course, sizeof(int), 0);
 
-                            for (int i = 0; i < total_course; i++)
+                            for (int i = 0; i < total_course - 1; i++)
                             {
                                 send(client_socket, &all_courses[i], sizeof(all_courses[i]), 0);
                             }
@@ -871,10 +899,10 @@ void *handle_client(void *arg)
                         char new_course_name[30];
                         recv(client_socket, new_course_name, sizeof(new_course_name), 0);
 
-                        char en_faculty_id[30] = "Enter Faculty ID: ";
-                        send(client_socket, en_faculty_id, sizeof(en_faculty_id), 0);
-                        char new_faculty_id[50];
-                        recv(client_socket, new_faculty_id, sizeof(new_faculty_id), 0);
+                        // char en_faculty_id[30] = "Enter Faculty ID: ";
+                        // send(client_socket, en_faculty_id, sizeof(en_faculty_id), 0);
+                        // char new_faculty_id[50];
+                        // recv(client_socket, new_faculty_id, sizeof(new_faculty_id), 0);
 
                         char en_number_seats[30] = "Enter Number of Seats: ";
                         send(client_socket, en_number_seats, sizeof(en_number_seats), 0);
@@ -884,8 +912,10 @@ void *handle_client(void *arg)
                         struct Course add_course;
                         strcpy(add_course.course_id, new_course_id);
                         strcpy(add_course.course_name, new_course_name);
-                        strcpy(add_course.faculty_id, new_faculty_id);
-                        strcpy(add_course.seats, new_number_seats);
+                        strcpy(add_course.faculty_id, username);
+                        strcpy(add_course.max_seats, new_number_seats);
+                        strcpy(add_course.rem_seats, new_number_seats);
+
                         char filename[] = "data/courses_data/course_details.txt";
                         char added_succ[30];
                         if (write_course_data_to_file(add_course, filename))
@@ -907,7 +937,7 @@ void *handle_client(void *arg)
                         recv(client_socket, take_course_id, sizeof(take_course_id), 0);
                         char filename[] = "data/courses_data/course_details.txt";
                         char remove_status[30];
-                        if (remove_course_from_catalog(take_course_id, filename))
+                        if (remove_course_from_catalog(take_course_id, filename, username))
                         {
                             strcpy(remove_status, "Course removed successfully");
                         }
@@ -920,7 +950,7 @@ void *handle_client(void *arg)
                     // Update Course Details
                     else if (choice == 4)
                     {
-                        char en_login[45] = "Enter Log in ID of the Student: ";
+                        char en_login[45] = "Enter Course ID: ";
                         send(client_socket, en_login, sizeof(en_login), 0);
                         char course_id[50];
                         recv(client_socket, course_id, sizeof(course_id), 0);
@@ -934,7 +964,7 @@ void *handle_client(void *arg)
                         char new_data[120];
                         recv(client_socket, new_data, sizeof(new_data), 0);
                         char filename[50] = "data/courses_data/course_details.txt";
-                        if (update_course_details(course_id, this_detail, new_data, filename))
+                        if (update_course_details(course_id, this_detail, new_data, filename, username))
                         {
                             char update_status[40] = "Details Updated Successfully";
                             send(client_socket, update_status, sizeof(update_status), 0);
@@ -979,7 +1009,8 @@ void *handle_client(void *arg)
             }
             else
             {
-                // authentication fail
+                strcpy(auth_succ_fail, "Wrong Login ID/Username or Password!!");
+                send(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
             }
         }
         // admin logic
@@ -992,6 +1023,8 @@ void *handle_client(void *arg)
             send(client_socket, &auth_status, sizeof(int), 0);
             if (auth_status == 1)
             {
+                strcpy(auth_succ_fail , "Log in Successful");
+                send(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
                 char admin_menu[200] = "1) Add student\n2) View Student Details\n3) Add Faculty\n4) View Faculty Details\n5) Activate Student\n6) Block Student\n7) Modify Student Details\n8) Modify Faculty Details\n9) Exit\nEnter Your Choice: ";
                 while (1)
                 {
@@ -1166,6 +1199,11 @@ void *handle_client(void *arg)
                         break;
                     }
                 }
+            }
+            else
+            {
+                strcpy(auth_succ_fail , "Wrong Login ID/Username or Password!!");
+                send(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
             }
         }
     }
