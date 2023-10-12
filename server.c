@@ -6,9 +6,12 @@
 #include <pthread.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/sendfile.h>
 
 #define PORT 8080
 #define MAX_CLIENTS 10
+#define MAX_COURSES 50
+
 int clients_count = 0;
 
 struct User
@@ -38,6 +41,14 @@ struct Faculty
     char designation[50];
     char email_id[100];
     char address[100];
+};
+
+struct Course
+{
+    char course_id[20];
+    char course_name[30];
+    char faculty_id[50];
+    char seats[20];
 };
 
 void write_student_data_to_file(struct Student student, const char *filename)
@@ -111,7 +122,8 @@ void write_faculty_log_in_data_to_file(struct Faculty faculty, const char *filen
     }
 
     char buffer[120];
-    snprintf(buffer, sizeof(buffer), "%s$%s\n", faculty.login_id, faculty.password);
+    char temp[5];
+    snprintf(buffer, sizeof(buffer), "%s$%s$%s$\n", faculty.login_id, faculty.password, temp);
     write(file_fd, buffer, strlen(buffer));
     close(file_fd);
 }
@@ -487,6 +499,74 @@ int update_faculty_details(const char *login_id, const char *this_detail, const 
     }
 }
 
+// Faculty part start
+int add_course_to_file(struct Course add_course, const char *filename)
+{
+    int file_fd = open(filename, O_WRONLY | O_APPEND);
+    if (file_fd < 0)
+    {
+        perror("Error opening file");
+        return 0;
+    }
+    int succ = 0;
+    char buffer[512];
+    snprintf(buffer, sizeof(buffer), "%s$%s$%s$%s$\n",
+             add_course.course_id,
+             add_course.course_name,
+             add_course.faculty_id,
+             add_course.seats);
+
+    if (write(file_fd, buffer, strlen(buffer)))
+    {
+        succ = 1;
+    }
+    close(file_fd);
+    return succ;
+}
+
+int view_all_courses(struct Course all_courses[], const char *filename)
+{
+    int file_fd = open(filename, O_RDONLY);
+    if (file_fd < 0)
+    {
+        perror("Error opening file");
+        return 0;
+    }
+
+    int count = 0;
+    char buffer[256];
+    ssize_t bytesRead;
+
+    while ((bytesRead = read(file_fd, buffer, sizeof(buffer))) > 0)
+    {
+        char *token = strtok(buffer, "$");
+        while (token != NULL)
+        {
+            strncpy(all_courses[count].course_id, token, sizeof(all_courses[count].course_id) - 1);
+            token = strtok(NULL, "$");
+            if (token != NULL)
+            {
+                strncpy(all_courses[count].course_name, token, sizeof(all_courses[count].course_name) - 1);
+                token = strtok(NULL, "$");
+            }
+            if (token != NULL)
+            {
+                strncpy(all_courses[count].faculty_id, token, sizeof(all_courses[count].faculty_id) - 1);
+                token = strtok(NULL, "$");
+            }
+            if (token != NULL)
+            {
+                strncpy(all_courses[count].seats, token, sizeof(all_courses[count].seats) - 1);
+                token = strtok(NULL, "$");
+            }
+            count++;
+        }
+    }
+
+    close(file_fd);
+    return count;
+}
+
 void *handle_client(void *arg)
 {
     int client_socket = *((int *)arg);
@@ -540,6 +620,22 @@ void *handle_client(void *arg)
                     // View All Courses
                     if (choice == 1)
                     {
+                        int ack;
+                        recv(client_socket, &ack, sizeof(int), 0);
+                        if (ack)
+                        {
+                            char filename[50] = "data/courses_data/course_details.txt";
+                            struct Course all_courses[MAX_COURSES];
+                            char list_of_all[30] = "List of all Courses";
+                            send(client_socket, list_of_all, sizeof(list_of_all), 0);
+                            int total_course = view_all_courses(all_courses, filename);
+                            send(client_socket, &total_course, sizeof(int), 0);
+
+                            for (int i = 0; i < total_course; i++)
+                            {
+                                send(client_socket, &all_courses[i], sizeof(all_courses[i]), 0);
+                            }
+                        }
                     }
                     // Enroll new Cources
                     else if (choice == 2)
@@ -599,6 +695,122 @@ void *handle_client(void *arg)
                 auth_status = 1;
             }
             send(client_socket, &auth_status, sizeof(int), 0);
+            if (auth_status == 1)
+            {
+                char faculty_menu[200] = "1) View All Courses\n2) Add new Cources\n3) Remove Courses from Catalog\n4) Update Course Details\n5) Change Password\n6) Logout and Exit\n";
+                while (1)
+                {
+                    send(client_socket, faculty_menu, sizeof(faculty_menu), 0);
+                    recv(client_socket, &choice, sizeof(int), 0);
+
+                    // View All Courses
+                    if (choice == 1)
+                    {
+                        int ack;
+                        recv(client_socket, &ack, sizeof(int), 0);
+                        if (ack)
+                        {
+                            char filename[50] = "data/courses_data/course_details.txt";
+                            struct Course all_courses[MAX_COURSES];
+                            char list_of_all[30] = "List of all Courses";
+                            send(client_socket, list_of_all, sizeof(list_of_all), 0);
+                            int total_course = view_all_courses(all_courses, filename);
+                            send(client_socket, &total_course, sizeof(int), 0);
+
+                            for (int i = 0; i < total_course; i++)
+                            {
+                                send(client_socket, &all_courses[i], sizeof(all_courses[i]), 0);
+                            }
+                        }
+                    }
+                    // Add new Cources
+                    else if (choice == 2)
+                    {
+                        char add_new_courses[30] = "Enter Course Details.\n";
+                        send(client_socket, add_new_courses, sizeof(add_new_courses), 0);
+
+                        char en_course_id[30] = "Enter Course ID: ";
+                        send(client_socket, en_course_id, sizeof(en_course_id), 0);
+                        char new_course_id[20];
+                        recv(client_socket, new_course_id, sizeof(new_course_id), 0);
+
+                        char en_course_name[30] = "Enter Course Name: ";
+                        send(client_socket, en_course_name, sizeof(en_course_name), 0);
+                        char new_course_name[30];
+                        recv(client_socket, new_course_name, sizeof(new_course_name), 0);
+
+                        char en_faculty_id[30] = "Enter Faculty ID: ";
+                        send(client_socket, en_faculty_id, sizeof(en_faculty_id), 0);
+                        char new_faculty_id[50];
+                        recv(client_socket, new_faculty_id, sizeof(new_faculty_id), 0);
+
+                        char en_number_seats[30] = "Enter Number of Seats: ";
+                        send(client_socket, en_number_seats, sizeof(en_number_seats), 0);
+                        char new_number_seats[20];
+                        recv(client_socket, new_number_seats, sizeof(new_number_seats), 0);
+
+                        struct Course add_course;
+                        strcpy(add_course.course_id, new_course_id);
+                        strcpy(add_course.course_name, new_course_name);
+                        strcpy(add_course.faculty_id, new_faculty_id);
+                        strcpy(add_course.seats, new_number_seats);
+                        char filename[] = "data/courses_data/course_details.txt";
+                        char added_succ[30];
+                        if (add_course_to_file(add_course, filename))
+                        {
+                            strcpy(added_succ, "Course added successfully");
+                        }
+                        else
+                        {
+                            strcpy(added_succ, "Can not add course");
+                        }
+                        send(client_socket, added_succ, sizeof(added_succ), 0);
+                    }
+                    // Remove Courses from Catalog
+                    else if (choice == 3)
+                    {
+                    }
+                    // Update Course Details
+                    else if (choice == 4)
+                    {
+                    }
+                    // Change Password
+                    else if (choice == 5)
+                    {
+                        // char en_old[30] = "Enter Current Password: ";
+                        // send(client_socket, en_old, sizeof(en_old), 0);
+                        // char old_password[50];
+                        // recv(client_socket, old_password, sizeof(old_password), 0);
+
+                        // char en_new[30] = "Enter New Password: ";
+                        // send(client_socket, en_new, sizeof(en_new), 0);
+                        // char new_password[50];
+                        // recv(client_socket, new_password, sizeof(new_password), 0);
+
+                        // char pass_update_status[50];
+                        // char temp_this_detail[30] = "password";
+
+                        // if (change_password(username, old_password, new_password) && update_student_details(username, temp_this_detail, new_password, "data/students_data/student_data.txt"))
+                        // {
+                        //     strcpy(pass_update_status, "Password Changed Successfully");
+                        // }
+                        // else
+                        // {
+                        //     strcpy(pass_update_status, "Check Your Current Password");
+                        // }
+                        // send(client_socket, pass_update_status, sizeof(pass_update_status), 0);
+                    }
+                    // Logout and Exit
+                    else if (choice == 6)
+                    {
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                // authentication fail
+            }
         }
         // admin logic
         else if (num == 3)
