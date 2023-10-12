@@ -191,6 +191,7 @@ int main()
                     // Drop Courses
                     else if (choice == 3)
                     {
+                        
                     }
                     // View Enrolled Course Details
                     else if (choice == 4)
@@ -323,10 +324,46 @@ int main()
                     // Remove Courses from Catalog
                     else if (choice == 3)
                     {
+                        char en_course_id[30];
+                        recv(client_socket,en_course_id,sizeof(en_course_id),0);
+                        printf("%s\n",en_course_id);
+                        char take_course_id[20];
+                        getchar();
+                        scanf("%[^\n]",take_course_id);
+                        send(client_socket,take_course_id,sizeof(take_course_id),0);
+                        char remove_status[30];
+                        recv(client_socket,remove_status,sizeof(remove_status),0);
+                        printf("%s\n",remove_status);
                     }
                     // Update Course Details
                     else if (choice == 4)
                     {
+                        char en_course_id[45];
+                        recv(client_socket, en_course_id, sizeof(en_course_id), 0);
+                        printf("%s", en_course_id);
+                        char course_id[30];
+                        getchar();
+                        scanf("%[^\n]", course_id);
+                        send(client_socket, course_id, sizeof(course_id), 0);
+
+                        char which_det[50];
+                        recv(client_socket, which_det, sizeof(which_det), 0);
+                        printf("%s", which_det);
+                        char this_detail[15];
+                        getchar();
+                        scanf("%[^\n]", this_detail);
+                        send(client_socket, this_detail, sizeof(this_detail), 0);
+
+                        char en_nw_det[20];
+                        recv(client_socket, en_nw_det, sizeof(en_nw_det), 0);
+                        printf("%s", en_nw_det);
+                        char new_data[120];
+                        getchar();
+                        scanf("%[^\n]", new_data);
+                        send(client_socket, new_data, sizeof(new_data), 0);
+                        char update_status[40];
+                        recv(client_socket, update_status, sizeof(update_status), 0);
+                        printf("%s\n", update_status);
                     }
                     // Change Password
                     else if (choice == 5)

@@ -337,9 +337,8 @@ int update_activation_status_login_file(const char *login_id, const char *new_va
     return 1;
 }
 
-int change_password(const char *login_id, const char *old_password, const char *new_password)
+int change_password(const char *login_id, const char *old_password, const char *new_password, const char *filename)
 {
-    char filename[40] = "data/students_data/student_log_in.txt";
     int file_fd = open(filename, O_RDWR);
     if (file_fd < 0)
     {
@@ -404,7 +403,7 @@ int update_student_details(const char *login_id, const char *this_detail, const 
         else if (strcmp(this_detail, "password") == 0)
         {
             strcpy(new_student.password, new_data);
-            change_password(login_id, result.password, new_data);
+            change_password(login_id, result.password, new_data,filename);
         }
         else if (strcmp(this_detail, "name") == 0)
         {
@@ -500,7 +499,7 @@ int update_faculty_details(const char *login_id, const char *this_detail, const 
 }
 
 // Faculty part start
-int add_course_to_file(struct Course add_course, const char *filename)
+int write_course_data_to_file(struct Course add_course, const char *filename)
 {
     int file_fd = open(filename, O_WRONLY | O_APPEND);
     if (file_fd < 0)
@@ -565,6 +564,139 @@ int view_all_courses(struct Course all_courses[], const char *filename)
 
     close(file_fd);
     return count;
+}
+
+int remove_course_from_catalog(const char *take_course_id, const char *filename)
+{
+    FILE *originalFile = fopen(filename, "r");
+    if (originalFile == NULL)
+    {
+        return 0;
+    }
+
+    FILE *tempFile = fopen("tempfile.txt", "w");
+    if (tempFile == NULL)
+    {
+        fclose(originalFile);
+        return 0;
+    }
+
+    char line[256];
+    int found = 0;
+
+    while (fgets(line, sizeof(line), originalFile) != NULL)
+    {
+        char stored_login_id[20];
+        if (sscanf(line, "%19[^$]$", stored_login_id) == 1)
+        {
+            if (strcmp(stored_login_id, take_course_id) == 0)
+            {
+                found = 1;
+            }
+            else
+            {
+                fputs(line, tempFile);
+            }
+        }
+    }
+
+    fclose(originalFile);
+    fclose(tempFile);
+
+    if (found)
+    {
+        if (remove(filename) != 0)
+        {
+            return 0;
+        }
+        if (rename("tempfile.txt", filename) != 0)
+        {
+            return 0;
+        }
+    }
+    else
+    {
+        remove("tempfile.txt");
+        return 0;
+    }
+    return 1;
+}
+
+int search_course_by_id(const char *course_id, const char *filename, struct Course *result)
+{
+    int file_fd = open(filename, O_RDONLY);
+    if (file_fd < 0)
+    {
+        perror("Error opening file");
+        return 0;
+    }
+
+    char buffer[256];
+    ssize_t bytesRead;
+    int course_found = 0;
+
+    while ((bytesRead = read(file_fd, buffer, sizeof(buffer))) > 0)
+    {
+        char *line = strtok(buffer, "\n");
+        while (line != NULL)
+        {
+            struct Course course;
+
+            sscanf(line, "%19[^$]$%29[^$]$%49[^$]$%19[^$]", course.course_id, course.course_name, course.faculty_id, course.seats);
+            if (strcmp(course.course_id, course_id) == 0)
+            {
+                *result = course;
+                course_found = 1;
+                close(file_fd);
+                return course_found;
+            }
+            line = strtok(NULL, "\n");
+        }
+    }
+    close(file_fd);
+    return course_found;
+}
+
+int update_course_details(const char *course_id, const char *this_detail, const char *new_data, const char *filename)
+{
+
+    struct Course result;
+    struct Course new_course;
+    if (search_course_by_id(course_id, filename, &result))
+    {
+        strcpy(new_course.course_id, result.course_id);
+        strcpy(new_course.course_name, result.course_name);
+        strcpy(new_course.faculty_id, result.faculty_id);
+        strcpy(new_course.seats, result.seats);
+        remove_course_from_catalog(course_id, filename);
+        if (strcmp(this_detail, "course id") == 0)
+        {
+            write_course_data_to_file(new_course, filename);
+            return 0;
+        }
+        else if (strcmp(this_detail, "course name") == 0)
+        {
+            strcpy(new_course.course_name, new_data);
+        }
+        else if (strcmp(this_detail, "faculty id") == 0)
+        {
+            strcpy(new_course.faculty_id, new_data);
+        }
+        else if (strcmp(this_detail, "seats") == 0)
+        {
+            strcpy(new_course.seats, new_data);
+        }
+        else
+        {
+            return 0;
+        }
+        write_course_data_to_file(new_course, filename);
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 void *handle_client(void *arg)
@@ -665,7 +797,7 @@ void *handle_client(void *arg)
                         char pass_update_status[50];
                         char temp_this_detail[30] = "password";
 
-                        if (change_password(username, old_password, new_password) && update_student_details(username, temp_this_detail, new_password, "data/students_data/student_data.txt"))
+                        if (change_password(username, old_password, new_password,"data/students_data/student_log_in.txt") && update_student_details(username, temp_this_detail, new_password, "data/students_data/student_data.txt"))
                         {
                             strcpy(pass_update_status, "Password Changed Successfully");
                         }
@@ -756,7 +888,7 @@ void *handle_client(void *arg)
                         strcpy(add_course.seats, new_number_seats);
                         char filename[] = "data/courses_data/course_details.txt";
                         char added_succ[30];
-                        if (add_course_to_file(add_course, filename))
+                        if (write_course_data_to_file(add_course, filename))
                         {
                             strcpy(added_succ, "Course added successfully");
                         }
@@ -769,36 +901,74 @@ void *handle_client(void *arg)
                     // Remove Courses from Catalog
                     else if (choice == 3)
                     {
+                        char en_course_id[30] = "Enter Course ID: ";
+                        send(client_socket, en_course_id, sizeof(en_course_id), 0);
+                        char take_course_id[20];
+                        recv(client_socket, take_course_id, sizeof(take_course_id), 0);
+                        char filename[] = "data/courses_data/course_details.txt";
+                        char remove_status[30];
+                        if (remove_course_from_catalog(take_course_id, filename))
+                        {
+                            strcpy(remove_status, "Course removed successfully");
+                        }
+                        else
+                        {
+                            strcpy(remove_status, "Can not remove course");
+                        }
+                        send(client_socket, remove_status, sizeof(remove_status), 0);
                     }
                     // Update Course Details
                     else if (choice == 4)
                     {
+                        char en_login[45] = "Enter Log in ID of the Student: ";
+                        send(client_socket, en_login, sizeof(en_login), 0);
+                        char course_id[50];
+                        recv(client_socket, course_id, sizeof(course_id), 0);
+
+                        char which_det[50] = "Which detail you want to modify? ";
+                        send(client_socket, which_det, sizeof(which_det), 0);
+                        char this_detail[15];
+                        recv(client_socket, this_detail, sizeof(this_detail), 0);
+                        char en_nw_det[20] = "Enter new Value: ";
+                        send(client_socket, en_nw_det, sizeof(en_nw_det), 0);
+                        char new_data[120];
+                        recv(client_socket, new_data, sizeof(new_data), 0);
+                        char filename[50] = "data/courses_data/course_details.txt";
+                        if (update_course_details(course_id, this_detail, new_data, filename))
+                        {
+                            char update_status[40] = "Details Updated Successfully";
+                            send(client_socket, update_status, sizeof(update_status), 0);
+                        }
+                        else
+                        {
+                            char update_status[40] = "Updation Failed";
+                            send(client_socket, update_status, sizeof(update_status), 0);
+                        }
                     }
                     // Change Password
                     else if (choice == 5)
                     {
-                        // char en_old[30] = "Enter Current Password: ";
-                        // send(client_socket, en_old, sizeof(en_old), 0);
-                        // char old_password[50];
-                        // recv(client_socket, old_password, sizeof(old_password), 0);
+                        char en_old[30] = "Enter Current Password: ";
+                        send(client_socket, en_old, sizeof(en_old), 0);
+                        char old_password[50];
+                        recv(client_socket, old_password, sizeof(old_password), 0);
 
-                        // char en_new[30] = "Enter New Password: ";
-                        // send(client_socket, en_new, sizeof(en_new), 0);
-                        // char new_password[50];
-                        // recv(client_socket, new_password, sizeof(new_password), 0);
+                        char en_new[30] = "Enter New Password: ";
+                        send(client_socket, en_new, sizeof(en_new), 0);
+                        char new_password[50];
+                        recv(client_socket, new_password, sizeof(new_password), 0);
 
-                        // char pass_update_status[50];
-                        // char temp_this_detail[30] = "password";
-
-                        // if (change_password(username, old_password, new_password) && update_student_details(username, temp_this_detail, new_password, "data/students_data/student_data.txt"))
-                        // {
-                        //     strcpy(pass_update_status, "Password Changed Successfully");
-                        // }
-                        // else
-                        // {
-                        //     strcpy(pass_update_status, "Check Your Current Password");
-                        // }
-                        // send(client_socket, pass_update_status, sizeof(pass_update_status), 0);
+                        char pass_update_status[50];
+                        char temp_this_detail[30] = "password";
+                        if (change_password(username, old_password, new_password, "data/faculties_data/faculties_log_in.txt") && update_student_details(username, temp_this_detail, new_password, "data/faculties_data/faculty_data.txt"))
+                        {
+                            strcpy(pass_update_status, "Password Changed Successfully");
+                        }
+                        else
+                        {
+                            strcpy(pass_update_status, "Check Your Current Password");
+                        }
+                        send(client_socket, pass_update_status, sizeof(pass_update_status), 0);
                     }
                     // Logout and Exit
                     else if (choice == 6)
@@ -951,7 +1121,6 @@ void *handle_client(void *arg)
                         send(client_socket, en_nw_det, sizeof(en_nw_det), 0);
                         char new_data[120];
                         recv(client_socket, new_data, sizeof(new_data), 0);
-
                         if (update_student_details(log_in_id, this_detail, new_data, "data/students_data/student_data.txt"))
                         {
                             char update_status[40] = "Details Updated Successfully";
