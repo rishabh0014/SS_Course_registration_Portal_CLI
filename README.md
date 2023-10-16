@@ -1,1 +1,1 @@
-# SS_mini_Projectd
+# Software System Mini Project
