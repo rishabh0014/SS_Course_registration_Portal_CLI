@@ -5,8 +5,8 @@
 
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
-- [Installation](#installation)
-- [Installation](#installation)
+- [FAQ](#faq)
+- [RoadMap](#roadmap)
 
 ## Prerequisites:
 - Before you can install and run the Academia Portal, you need to have a C programming environment installed on your system. This typically includes a C compiler, such as GCC (GNU Compiler Collection).
