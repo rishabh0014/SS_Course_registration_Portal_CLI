@@ -1,7 +1,4 @@
-# Software System Mini Project: Design and Development of Course Registration Portal
-
-# Description:
-
+# Software System Mini Project: Design and Development of Course Registration Porta
 - The "Design and Development of Course Registration Portal (Academia)" is an ambitious project aimed at creating a comprehensive academic portal that addresses the evolving needs of educational institutions and students. This portal will serve as a user-friendly and multifunctional platform, revolutionizing the way course registration and academic management are conducted.
 
 ## How to execute?
