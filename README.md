@@ -69,4 +69,4 @@ Step 3: Initial Configuration
   - For enhanced security, it's recommended that you implement a password reset or account creation process that allows users to set their own passwords during their first login.
 
 ## License
-This project is licensed under the XYZ License - see the [LICENSE](license) file for details.
+This project is licensed under the XYZ License - see the [LICENSE](LICENSE) file for details.
