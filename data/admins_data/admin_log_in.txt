@@ -1,3 +1,3 @@
-admin3$pass3$1
-1$1$1
-rishabh$rishabh14$1
+admin$1234$1$
+1$1$1$
+rishabh$rishabh14$1$

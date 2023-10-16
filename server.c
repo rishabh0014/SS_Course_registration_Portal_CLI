@@ -11,7 +11,7 @@
 #include <termios.h>
 
 #define PORT 8080
-#define MAX_CLIENTS 10
+#define MAX_CLIENTS 2
 // #define MAX_COURSES 50
 #define MAX_STUDENTS 100
 #define MAX_COURSES 5
@@ -302,44 +302,43 @@ void removeStudentDetails(const char *login_id, const char *filename)
 }
 
 int update_activation_status_login_file(const char *login_id, const char *new_val, const char *filename)
-{
+{   printf("%s,%s\n\n",login_id,new_val);
     int file_fd = open(filename, O_RDWR);
     if (file_fd < 0)
     {
         perror("Error opening file");
         return 0;
     }
+
     char buffer[256];
-    char new_file_contents[256] = "";
     ssize_t bytesRead;
+
     while ((bytesRead = read(file_fd, buffer, sizeof(buffer))) > 0)
     {
         char *line = strtok(buffer, "\n");
         while (line != NULL)
         {
-            char stored_login_id[50], password[50], activate_stu[5];
-            sscanf(line, "%49[^$]$%49[^$]$%4[^$]$", stored_login_id, password, activate_stu);
-            if (strcmp(stored_login_id, login_id) == 0)
-            {
-                strncpy(activate_stu, new_val, sizeof(activate_stu));
-            }
-            char updated_line[256];
-            snprintf(updated_line, sizeof(updated_line), "%s$%s$%s$\n", stored_login_id, password, activate_stu);
-            strcat(new_file_contents, updated_line);
+            char stored_username[50], stored_password[50], stored_activate_stu[5];
 
+            sscanf(line, "%49[^$]$%49[^$]$%4[^$]$", stored_username, stored_password, stored_activate_stu);
+            printf("%s,%s\n",stored_username,stored_password);
+            if (strcmp(stored_username, login_id) == 0)
+            {   
+                printf("q");
+                removeStudentDetails(login_id, filename);
+                struct Student curr_stu;
+                strcpy(curr_stu.login_id, login_id);
+                strcpy(curr_stu.password, stored_password);
+                strcpy(curr_stu.activate_stu, new_val);
+                write_student_log_in_data_to_file(curr_stu, filename);
+                close(file_fd);
+                return 1;
+            }
             line = strtok(NULL, "\n");
         }
     }
     close(file_fd);
-    file_fd = open(filename, O_WRONLY | O_TRUNC);
-    if (file_fd < 0)
-    {
-        perror("Error reopening file for writing");
-        return 0;
-    }
-    write(file_fd, new_file_contents, strlen(new_file_contents));
-    close(file_fd);
-    return 1;
+    return 0;
 }
 
 int change_password(const char *login_id, const char *old_password, const char *new_password, const char *filename)
@@ -421,9 +420,9 @@ int update_student_details(const char *login_id, const char *this_detail, const 
         {
             strcpy(new_student.address, new_data);
         }
-        else if (strcmp(this_detail, "status") == 0)
-        {
-            printf("%s", new_data);
+        else if (strcmp(this_detail, "account status") == 0)
+        {   
+            // printf("EE");
             update_activation_status_login_file(login_id, new_data, "data/students_data/student_log_in.txt");
             strcpy(new_student.activate_stu, new_data);
         }
@@ -877,7 +876,7 @@ void *handle_client(void *arg)
         // Username and Password
         {
             char en_username[20] = "\nEnter username: ";
-            char en_password[20] = "\nEnter password: ";
+            char en_password[20] = "Enter password: ";
             send(client_socket, en_username, sizeof(en_username), 0);
             send(client_socket, en_password, sizeof(en_password), 0);
             read(client_socket, username, sizeof(username));
@@ -885,7 +884,6 @@ void *handle_client(void *arg)
         }
 
         // student Logic
-
         if (num == 1)
         {
             
@@ -896,9 +894,9 @@ void *handle_client(void *arg)
             send(client_socket, &auth_status, sizeof(int), 0);
             if (auth_status == 1)
             {
-                strcpy(auth_succ_fail, "Log in Successful\n");
+                strcpy(auth_succ_fail, "\nLog in Successful");
                 send(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
-                char student_menu[200] = "What do you want to do?\n\n1) View All Courses\n2) Enroll new Cources\n3) Drop Courses\n4) view Enrolled Course Details\n5) Change Password\n6) Logout and Exit\n\nEnter Your Choice: ";
+                char student_menu[200] = "\nWhat do you want to do?\n\n1) View All Courses\n2) Enroll new Cources\n3) Drop Courses\n4) view Enrolled Course Details\n5) Change Password\n6) Logout and Exit\n\nEnter Your Choice: ";
                 while (1)
                 {
                     send(client_socket, student_menu, sizeof(student_menu), 0);
@@ -913,7 +911,7 @@ void *handle_client(void *arg)
                         {
                             char filename[50] = "data/courses_data/course_details.txt";
                             struct Course all_courses[MAX_COURSES];
-                            char list_of_all[30] = "List of all Courses";
+                            char list_of_all[30] = "\nList of all Courses\n";
                             send(client_socket, list_of_all, sizeof(list_of_all), 0);
                             int total_course = view_all_courses(all_courses, filename);
                             send(client_socket, &total_course, sizeof(int), 0);
@@ -986,9 +984,9 @@ void *handle_client(void *arg)
             send(client_socket, &auth_status, sizeof(int), 0);
             if (auth_status == 1)
             {
-                strcpy(auth_succ_fail, "Log in Successful");
+                strcpy(auth_succ_fail, "\nLog in Successful");
                 send(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
-                char faculty_menu[200] = "1) View All Courses\n2) Add new Cources\n3) Remove Courses from Catalog\n4) Update Course Details\n5) Change Password\n6) Logout and Exit\n";
+                char faculty_menu[200] = "\nWhat do you want to do?\n\n1) View All Courses\n2) Add new Cources\n3) Remove Courses from Catalog\n4) Update Course Details\n5) Change Password\n6) Logout and Exit\n\nEnter Your Choice: ";
                 while (1)
                 {
                     send(client_socket, faculty_menu, sizeof(faculty_menu), 0);
@@ -1003,7 +1001,7 @@ void *handle_client(void *arg)
                         {
                             char filename[50] = "data/courses_data/course_details.txt";
                             struct Course all_courses[MAX_COURSES];
-                            char list_of_all[30] = "List of all Courses";
+                            char list_of_all[30] = "\nList of all Courses";
                             send(client_socket, list_of_all, sizeof(list_of_all), 0);
                             int total_course = view_offering_courses(all_courses, filename, username);
                             send(client_socket, &total_course, sizeof(int), 0);
@@ -1017,7 +1015,7 @@ void *handle_client(void *arg)
                     // Add new Cources
                     else if (choice == 2)
                     {
-                        char add_new_courses[30] = "Enter Course Details.\n";
+                        char add_new_courses[30] = "\nEnter Course Details.\n\n";
                         send(client_socket, add_new_courses, sizeof(add_new_courses), 0);
 
                         char en_course_id[30] = "Enter Course ID: ";
@@ -1029,11 +1027,6 @@ void *handle_client(void *arg)
                         send(client_socket, en_course_name, sizeof(en_course_name), 0);
                         char new_course_name[30];
                         recv(client_socket, new_course_name, sizeof(new_course_name), 0);
-
-                        // char en_faculty_id[30] = "Enter Faculty ID: ";
-                        // send(client_socket, en_faculty_id, sizeof(en_faculty_id), 0);
-                        // char new_faculty_id[50];
-                        // recv(client_socket, new_faculty_id, sizeof(new_faculty_id), 0);
 
                         char en_number_seats[30] = "Enter Number of Seats: ";
                         send(client_socket, en_number_seats, sizeof(en_number_seats), 0);
@@ -1154,9 +1147,9 @@ void *handle_client(void *arg)
             send(client_socket, &auth_status, sizeof(int), 0);
             if (auth_status == 1)
             {
-                strcpy(auth_succ_fail, "Log in Successful");
+                strcpy(auth_succ_fail, "\nLog in Successful");
                 send(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
-                char admin_menu[200] = "1) Add student\n2) View Student Details\n3) Add Faculty\n4) View Faculty Details\n5) Activate Student\n6) Block Student\n7) Modify Student Details\n8) Modify Faculty Details\n9) Exit\nEnter Your Choice: ";
+                char admin_menu[250] = "\nWhat do you want to do?\n\n1) Add student\n2) View Student Details\n3) Add Faculty\n4) View Faculty Details\n5) Activate Student\n6) Block Student\n7) Modify Student Details\n8) Modify Faculty Details\n9) Exit\n\nEnter Your Choice: ";
                 while (1)
                 {
                     send(client_socket, admin_menu, sizeof(admin_menu), 0);
@@ -1164,7 +1157,7 @@ void *handle_client(void *arg)
 
                     // Add Studednt
                     if (choice == 1)
-                    {
+                    {   
                         char buffer[sizeof(struct Student)];
                         recv(client_socket, buffer, sizeof(struct Student), 0);
                         struct Student student_info;
@@ -1175,7 +1168,7 @@ void *handle_client(void *arg)
                     // View Student Details
                     else if (choice == 2)
                     {
-                        char give_stu_id[100] = "Enter Student ID: ";
+                        char give_stu_id[100] = "\nEnter Student ID: ";
                         send(client_socket, give_stu_id, sizeof(give_stu_id), 0);
                         char find_login_id[50];
                         recv(client_socket, find_login_id, sizeof(find_login_id), 0);
@@ -1209,7 +1202,7 @@ void *handle_client(void *arg)
                     // View Faculty Details
                     else if (choice == 4)
                     {
-                        char give_fac_id[100] = "Enter Faculty ID: ";
+                        char give_fac_id[100] = "\nEnter Faculty ID: ";
                         send(client_socket, give_fac_id, sizeof(give_fac_id), 0);
                         char find_login_id[50];
                         recv(client_socket, find_login_id, sizeof(find_login_id), 0);
@@ -1233,27 +1226,28 @@ void *handle_client(void *arg)
                     // Activate Student
                     else if (choice == 5)
                     {
-                        char en_stu_id[25] = "Enter Student ID: ";
+                        char en_stu_id[25] = "\nEnter Student ID: ";
                         send(client_socket, en_stu_id, sizeof(en_stu_id), 0);
                         char activate_stu_id[50];
                         recv(client_socket, activate_stu_id, sizeof(activate_stu_id), 0);
                         char activation_flag[40];
                         char temp_buff[5] = "1";
                         char temp_buff_status[20] = "account status";
-                        if (update_student_details(activate_stu_id, temp_buff_status, temp_buff, "data/students_data/student_data.txt"))
+                        char filename[] = "data/students_data/student_data.txt";
+                        if (update_student_details(activate_stu_id, temp_buff_status, temp_buff, filename))
                         {
-                            strcpy(activation_flag, "Student account Activated Successfully");
+                            strcpy(activation_flag, "\nStudent account Activated Successfully");
                         }
                         else
                         {
-                            strcpy(activation_flag, "Student ID not found");
+                            strcpy(activation_flag, "\nStudent ID not found");
                         }
                         send(client_socket, activation_flag, sizeof(activation_flag), 0);
                     }
                     // Block Student
                     else if (choice == 6)
                     {
-                        char en_stu_id[25] = "Enter Student ID: ";
+                        char en_stu_id[25] = "\nEnter Student ID: ";
                         send(client_socket, en_stu_id, sizeof(en_stu_id), 0);
                         char block_stu_id[50];
                         recv(client_socket, block_stu_id, sizeof(block_stu_id), 0);
@@ -1261,18 +1255,18 @@ void *handle_client(void *arg)
                         char temp_buff[5] = "0";
                         if (update_student_details(block_stu_id, "account status", temp_buff, "data/students_data/student_data.txt"))
                         {
-                            strcpy(activation_flag, "Student account Blocked Successfully");
+                            strcpy(activation_flag, "\nStudent account Blocked Successfully");
                         }
                         else
                         {
-                            strcpy(activation_flag, "Student ID not found");
+                            strcpy(activation_flag, "\nStudent ID not found");
                         }
                         send(client_socket, activation_flag, sizeof(activation_flag), 0);
                     }
                     // Modify Student Details
                     else if (choice == 7)
                     {
-                        char en_login[45] = "Enter Log in ID of the Student: ";
+                        char en_login[45] = "\nEnter Log in ID of the Student: ";
                         send(client_socket, en_login, sizeof(en_login), 0);
                         char log_in_id[50];
                         recv(client_socket, log_in_id, sizeof(log_in_id), 0);
@@ -1287,19 +1281,19 @@ void *handle_client(void *arg)
                         recv(client_socket, new_data, sizeof(new_data), 0);
                         if (update_student_details(log_in_id, this_detail, new_data, "data/students_data/student_data.txt"))
                         {
-                            char update_status[40] = "Details Updated Successfully";
+                            char update_status[40] = "\nDetails Updated Successfully";
                             send(client_socket, update_status, sizeof(update_status), 0);
                         }
                         else
                         {
-                            char update_status[40] = "Updation Failed";
+                            char update_status[40] = "\nUpdation Failed";
                             send(client_socket, update_status, sizeof(update_status), 0);
                         }
                     }
                     // Moify Faculty Details
                     else if (choice == 8)
                     {
-                        char en_login[45] = "Enter Log in ID of the Faculty: ";
+                        char en_login[45] = "\nEnter Log in ID of the Faculty: ";
                         send(client_socket, en_login, sizeof(en_login), 0);
                         char log_in_id[50];
                         recv(client_socket, log_in_id, sizeof(log_in_id), 0);
@@ -1315,12 +1309,12 @@ void *handle_client(void *arg)
 
                         if (update_faculty_details(log_in_id, this_detail, new_data, "data/faculties_data/faculty_data.txt"))
                         {
-                            char update_status[40] = "Details Updated Successfully";
+                            char update_status[40] = "\nDetails Updated Successfully";
                             send(client_socket, update_status, sizeof(update_status), 0);
                         }
                         else
                         {
-                            char update_status[40] = "Updation Failed";
+                            char update_status[40] = "\nUpdation Failed";
                             send(client_socket, update_status, sizeof(update_status), 0);
                         }
                     }
@@ -1375,18 +1369,18 @@ int main()
     }
     while (1)
     {
+        printf("%d\n", clients_count);
         addr_size = sizeof(new_addr);
         new_socket = accept(server_socket, (struct sockaddr *)&new_addr, &addr_size);
-        if (pthread_create(&tid[clients_count], NULL, handle_client, &new_socket) != 0)
-        {
-            perror("Error in creating thread");
-        }
-        clients_count++;
-        printf("%d\n", clients_count);
         if (clients_count >= MAX_CLIENTS)
         {
             printf("Maximum number of clients reached. Connection rejected.\n");
             close(new_socket);
+        }
+        clients_count++;
+        if (pthread_create(&tid[clients_count], NULL, handle_client, &new_socket) != 0)
+        {
+            perror("Error in creating thread");
         }
     }
     close(server_socket);

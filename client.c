@@ -155,7 +155,7 @@ int main()
             {
                 recv(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
                 printf("%s\n", auth_succ_fail);
-                printf("Hello, %s! Welcome..\n\n", username);
+                printf("Hello, %s! Welcome..\n", username);
                 char student_menu[200];
                 while (1)
                 {
@@ -421,7 +421,7 @@ int main()
                 printf("%s\n", auth_succ_fail);
 
                 printf("Hello, %s! Welcome..\n", username);
-                char admin_menu[200];
+                char admin_menu[250];
                 while (1)
                 {
                     recv(client_socket, admin_menu, sizeof(admin_menu), 0);
@@ -437,7 +437,7 @@ int main()
                         // Taking student Info
                         {
                             getchar();
-                            printf("Enter Roll No/Log in ID: ");
+                            printf("\nEnter Roll No/Log in ID: ");
                             scanf("%[^\n]", student_info.login_id);
                             getchar();
                             printf("Enter Password: ");
@@ -478,13 +478,13 @@ int main()
                             recv(client_socket, buffer, sizeof(struct Student), 0);
                             struct Student student_info;
                             memcpy(&student_info, buffer, sizeof(struct Student));
-                            printf("Student Details\n");
-                            printf("Student Roll No/Log in ID: %s\n", student_info.login_id);
-                            printf("Student Password: %s\n", student_info.password);
-                            printf("Student Name: %s\n", student_info.name);
-                            printf("Student age: %s\n", student_info.age);
-                            printf("Student Email ID: %s\n", student_info.email_id);
-                            printf("Student Address: %s\n", student_info.address);
+                            printf("\nStudent Details\n");
+                            printf("\nRoll No/Log in ID: %s\n", student_info.login_id);
+                            printf("Password: %s\n", student_info.password);
+                            printf("Name: %s\n", student_info.name);
+                            printf("age: %s\n", student_info.age);
+                            printf("Email ID: %s\n", student_info.email_id);
+                            printf("Address: %s\n", student_info.address);
                             printf("Account Status: %s\n", student_info.activate_stu);
                         }
                         else
@@ -501,7 +501,7 @@ int main()
                         // Taking faculty Info
                         {
                             getchar();
-                            printf("Enter Log in ID: ");
+                            printf("\nEnter Log in ID: ");
                             scanf("%[^\n]", faculty_info.login_id);
                             getchar();
                             printf("Enter Password: ");
@@ -544,14 +544,14 @@ int main()
                             recv(client_socket, buffer, sizeof(struct Faculty), 0);
                             struct Faculty faculty_info;
                             memcpy(&faculty_info, buffer, sizeof(struct Faculty));
-                            printf("Student Details\n");
-                            printf("Student Roll No/Log in ID: %s\n", faculty_info.login_id);
-                            printf("Student Password: %s\n", faculty_info.password);
-                            printf("Student Name: %s\n", faculty_info.name);
-                            printf("Student department: %s\n", faculty_info.department);
-                            printf("Student designation: %s\n", faculty_info.designation);
-                            printf("Student Email ID: %s\n", faculty_info.email_id);
-                            printf("Student Address: %s\n", faculty_info.address);
+                            printf("\nFaculty Details\n");
+                            printf("\nLog in ID: %s\n", faculty_info.login_id);
+                            printf("Password: %s\n", faculty_info.password);
+                            printf("Name: %s\n", faculty_info.name);
+                            printf("department: %s\n", faculty_info.department);
+                            printf("designation: %s\n", faculty_info.designation);
+                            printf("Email ID: %s\n", faculty_info.email_id);
+                            printf("Address: %s\n", faculty_info.address);
                         }
                         else
                         {
