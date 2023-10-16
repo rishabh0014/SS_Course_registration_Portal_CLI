@@ -15,9 +15,19 @@ Step 1: Get the server up and running
 Step 2: Run the client program
 - Compile the client program
     ```bash
-        gcc client.c -o client.out
+        gcc -o client client.c
     ```
 - Run the client program for every user
     ```bash
-        ./client.out
+        ./client
     ```
+- Credentials to login as the admin  
+    - Login ID : `admin`
+    - Password : `1234`
+- Credentials to login as the faculty  
+    - Login ID : `faculty`
+    - Password : `1234`
+- Credentials to login as the student  
+    - Login ID : `student`
+    - Password : `1234`
+- There are more faculty and student. You can find the credentials in data/
