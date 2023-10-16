@@ -89,8 +89,8 @@ int main()
     int client_socket, num;
     struct sockaddr_in server_addr;
     int auth_status, change_pass_status;
-    char username[50], password[50], curr_password[50], new_password[50], welcome[100], select_role[100], en_username[20], en_password[20], auth_succ_fail[40];
-
+    char username[50], password[50], curr_password[50], new_password[50], welcome[200], select_role[200], en_username[20], en_password[20], auth_succ_fail[40];
+    char user_type[100];
     // socket
     {
         client_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -128,9 +128,12 @@ int main()
         printf("%s", exit_);
         exit(0);
     }
+
     // Student Faculty Admin
     else
     {
+        recv(client_socket, user_type, sizeof(user_type), 0);
+        printf("%s", user_type);
         // Input from User (username and password)
         {
             recv(client_socket, en_username, sizeof(en_username), 0);
@@ -146,12 +149,13 @@ int main()
         // student
         if (num == 1)
         {
+
             recv(client_socket, &auth_status, sizeof(int), 0);
             if (auth_status == 1)
             {
-                recv(client_socket,auth_succ_fail,sizeof(auth_succ_fail),0);
-                printf("%s\n",auth_succ_fail);
-                printf("Hello, %s! Welcome..\n", username);
+                recv(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
+                printf("%s\n", auth_succ_fail);
+                printf("Hello, %s! Welcome..\n\n", username);
                 char student_menu[200];
                 while (1)
                 {
@@ -176,7 +180,7 @@ int main()
                             recv(client_socket, &total_course, sizeof(int), 0);
 
                             struct Course course_detail;
-                            for (int i = 0; i < total_course-1; i++)
+                            for (int i = 0; i < total_course - 1; i++)
                             {
                                 recv(client_socket, &course_detail, sizeof(course_detail), 0);
                                 remove_new_line(course_detail.course_id);
@@ -196,13 +200,6 @@ int main()
                     // Enroll new Cources
                     else if (choice == 2)
                     {
-                        char en_new_course[30];
-                        recv(client_socket,en_new_course,sizeof(en_new_course),0);
-                        printf("%s",en_new_course);
-                        char course_id[20];
-                        getchar();
-                        scanf("%[^\n]",course_id);
-                        send(client_socket,course_id,sizeof(course_id),0);
                     }
                     // Drop Courses
                     else if (choice == 3)
@@ -242,9 +239,10 @@ int main()
                 }
             }
             // Authentication failed Student
-            else{
+            else
+            {
                 recv(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
-                printf("%s\n",auth_succ_fail);
+                printf("%s\n", auth_succ_fail);
             }
         }
         // faculty
@@ -253,8 +251,8 @@ int main()
             recv(client_socket, &auth_status, sizeof(int), 0);
             if (auth_status == 1)
             {
-                recv(client_socket,auth_succ_fail,sizeof(auth_succ_fail),0);
-                printf("%s\n",auth_succ_fail);
+                recv(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
+                printf("%s\n", auth_succ_fail);
                 printf("Hello, %s! Welcome..\n", username);
                 char faculty_menu[200];
                 while (1)
@@ -410,7 +408,7 @@ int main()
             else
             {
                 recv(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
-                printf("%s\n",auth_succ_fail);
+                printf("%s\n", auth_succ_fail);
             }
         }
         // admin
@@ -419,8 +417,8 @@ int main()
             recv(client_socket, &auth_status, sizeof(int), 0);
             if (auth_status == 1)
             {
-                recv(client_socket,auth_succ_fail,sizeof(auth_succ_fail),0);
-                printf("%s\n",auth_succ_fail);
+                recv(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
+                printf("%s\n", auth_succ_fail);
 
                 printf("Hello, %s! Welcome..\n", username);
                 char admin_menu[200];
@@ -663,7 +661,7 @@ int main()
             else
             {
                 recv(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
-                printf("%s\n",auth_succ_fail);
+                printf("%s\n", auth_succ_fail);
             }
         }
     }
