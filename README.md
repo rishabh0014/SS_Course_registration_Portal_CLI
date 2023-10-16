@@ -12,7 +12,7 @@
 
 
 ## Installation
--To get your Academia Portal up and running, follow these installation steps:
+- To get your Academia Portal up and running, follow these installation steps:
 
 Step 1: Clone the repository:   
     ```
