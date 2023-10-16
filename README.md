@@ -3,6 +3,9 @@
 
 ## Table of Contents
 
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Installation](#installation)
 - [Installation](#installation)
 
 ## Prerequisites:
