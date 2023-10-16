@@ -1,4 +1,60 @@
-#include "my_headers/all_header.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/sendfile.h>
+#include <ctype.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+#include <termios.h>
+
+#define PORT 8080
+#define MAX_CLIENTS 10
+// #define MAX_COURSES 50
+#define MAX_STUDENTS 100
+#define MAX_COURSES 5
+#define MAX_LINE_LENGTH 450
+
+int clients_count = 0;
+
+struct Student
+{
+    char login_id[50];
+    char password[50];
+    char name[100];
+    char age[10];
+    char email_id[100];
+    char address[100];
+    char activate_stu[5];
+};
+
+struct Faculty
+{
+    char login_id[50];
+    char password[50];
+    char name[100];
+    char department[50];
+    char designation[50];
+    char email_id[100];
+    char address[100];
+};
+
+struct Course
+{
+    char course_id[20];
+    char course_name[30];
+    char faculty_id[50];
+    char max_seats[20];
+    char rem_seats[20];
+};
+
+struct Student_Courses
+{
+    char login_id[50];
+    char taken_course[20];
+};
 
 void write_student_data_to_file(struct Student student, const char *filename)
 {
@@ -370,7 +426,7 @@ int update_student_details(const char *login_id, const char *this_detail, const 
         {
             strcpy(new_student.address, new_data);
         }
-        else if (strcmp(this_detail, "  status") == 0)
+        else if (strcmp(this_detail, "status") == 0)
         {
             printf("%s", new_data);
             update_activation_status_login_file(login_id, new_data, "data/students_data/student_log_in.txt");
@@ -722,6 +778,71 @@ int update_course_details(const char *course_id, const char *this_detail, const 
     }
 }
 
+void also_update_in_course_details(struct Course temp){
+    // char*endptr;
+    // int new_rem_seats = strtol(temp.rem_seats,&endptr,10);
+    // if(new_rem_seats>)
+    // new_rem_seats--;
+    // if()
+}
+int enroll_new_course(const char *login_id, const char *course_id)
+{
+    char course_detail_file[] = "data/courses_data/course_details.txt";
+    char course_and_students_file[] = "data/courses_data/course_and_students.txt";
+    
+    struct Course temp;
+
+    if(search_course_by_id(course_id,course_detail_file,&temp)==0){
+        return -3;
+    }
+
+
+    int file_fd = open(course_and_students_file, O_RDWR | O_APPEND);
+    if (file_fd < 0)
+    {
+        perror("Error opening file");
+        return 0;
+    }
+
+    char buffer[120];
+    ssize_t bytesRead;
+    int cnt = 0;
+    while ((bytesRead = read(file_fd, buffer, sizeof(buffer))) > 0)
+    {
+        char *line = strtok(buffer, "\n");
+        while (line != NULL)
+        {
+            char stored_login_id[50], stored_course_id[50];
+
+            sscanf(line, "%29[^$]$%29[^$]$", stored_login_id, stored_course_id);
+
+            if (strcmp(stored_login_id, login_id) == 0)
+            {
+                cnt++;
+                if (strcmp(stored_course_id, course_id) == 0)
+                {
+                    return -2;
+                }
+            }
+            line = strtok(NULL, "\n");
+        }
+    }
+    if (cnt >= 5)
+    {
+        return -1;
+    }
+    char to_write[100];
+    snprintf(to_write, sizeof(to_write), "%s$%s$\n", login_id, course_id);
+    if(write(file_fd, to_write, strlen(to_write))){
+        char this_detail[30] ="remaining seats"; 
+        also_update_in_course_details(temp);
+        return 1;
+
+    }
+
+    close(file_fd);
+    return 0;
+}
 void *handle_client(void *arg)
 {
     int client_socket = *((int *)arg);
@@ -766,7 +887,7 @@ void *handle_client(void *arg)
             send(client_socket, &auth_status, sizeof(int), 0);
             if (auth_status == 1)
             {
-                strcpy(auth_succ_fail , "Log in Successful");
+                strcpy(auth_succ_fail, "Log in Successful");
                 send(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
                 char student_menu[200] = "1) View All Courses\n2) Enroll new Cources\n3) Drop Courses\n4) view Enrolled Course Details\n5) Change Password\n6) Logout and Exit\n";
                 while (1)
@@ -788,7 +909,7 @@ void *handle_client(void *arg)
                             int total_course = view_all_courses(all_courses, filename);
                             send(client_socket, &total_course, sizeof(int), 0);
 
-                            for (int i = 0; i < total_course; i++)
+                            for (int i = 0; i < total_course - 1; i++)
                             {
                                 send(client_socket, &all_courses[i], sizeof(all_courses[i]), 0);
                             }
@@ -797,6 +918,17 @@ void *handle_client(void *arg)
                     // Enroll new Cources
                     else if (choice == 2)
                     {
+                        char en_new_course[30] = "Enter Course ID: ";
+                        send(client_socket, en_new_course, sizeof(en_new_course), 0);
+                        char course_id[20];
+                        recv(client_socket, course_id, sizeof(course_id), 0);
+                        int x =enroll_new_course(username, course_id); 
+                        if (x)
+                        {
+                            printf("Success\n");
+                        }
+                        printf("%d\n",x);
+
                     }
                     // Drop Courses
                     else if (choice == 3)
@@ -841,7 +973,7 @@ void *handle_client(void *arg)
             }
             else
             {
-                strcpy(auth_succ_fail ,"Wrong Login ID/Username or Password!!");
+                strcpy(auth_succ_fail, "Wrong Login ID/Username or Password!!");
                 send(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
             }
         }
@@ -855,7 +987,7 @@ void *handle_client(void *arg)
             send(client_socket, &auth_status, sizeof(int), 0);
             if (auth_status == 1)
             {
-                strcpy(auth_succ_fail , "Log in Successful");
+                strcpy(auth_succ_fail, "Log in Successful");
                 send(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
                 char faculty_menu[200] = "1) View All Courses\n2) Add new Cources\n3) Remove Courses from Catalog\n4) Update Course Details\n5) Change Password\n6) Logout and Exit\n";
                 while (1)
@@ -863,7 +995,7 @@ void *handle_client(void *arg)
                     send(client_socket, faculty_menu, sizeof(faculty_menu), 0);
                     recv(client_socket, &choice, sizeof(int), 0);
 
-                    // View All Courses
+                    // View Offered Courses
                     if (choice == 1)
                     {
                         int ack;
@@ -1023,7 +1155,7 @@ void *handle_client(void *arg)
             send(client_socket, &auth_status, sizeof(int), 0);
             if (auth_status == 1)
             {
-                strcpy(auth_succ_fail , "Log in Successful");
+                strcpy(auth_succ_fail, "Log in Successful");
                 send(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
                 char admin_menu[200] = "1) Add student\n2) View Student Details\n3) Add Faculty\n4) View Faculty Details\n5) Activate Student\n6) Block Student\n7) Modify Student Details\n8) Modify Faculty Details\n9) Exit\nEnter Your Choice: ";
                 while (1)
@@ -1202,7 +1334,7 @@ void *handle_client(void *arg)
             }
             else
             {
-                strcpy(auth_succ_fail , "Wrong Login ID/Username or Password!!");
+                strcpy(auth_succ_fail, "Wrong Login ID/Username or Password!!");
                 send(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
             }
         }

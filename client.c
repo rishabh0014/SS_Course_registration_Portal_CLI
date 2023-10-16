@@ -1,4 +1,51 @@
-#include "my_headers/all_header.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/sendfile.h>
+#include <ctype.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+#include <termios.h>
+
+#define PORT 8080
+#define MAX_CLIENTS 10
+#define MAX_COURSES 50
+
+int clients_count = 0;
+
+struct Student
+{
+    char login_id[50];
+    char password[50];
+    char name[100];
+    char age[10];
+    char email_id[100];
+    char address[100];
+    char activate_stu[5];
+};
+
+struct Faculty
+{
+    char login_id[50];
+    char password[50];
+    char name[100];
+    char department[50];
+    char designation[50];
+    char email_id[100];
+    char address[100];
+};
+
+struct Course
+{
+    char course_id[20];
+    char course_name[30];
+    char faculty_id[50];
+    char max_seats[20];
+    char rem_seats[20];
+};
 
 // General Functionality
 void hide_password(char *password, int max_length)
@@ -129,7 +176,7 @@ int main()
                             recv(client_socket, &total_course, sizeof(int), 0);
 
                             struct Course course_detail;
-                            for (int i = 1; i <= total_course; i++)
+                            for (int i = 0; i < total_course-1; i++)
                             {
                                 recv(client_socket, &course_detail, sizeof(course_detail), 0);
                                 remove_new_line(course_detail.course_id);
@@ -149,6 +196,13 @@ int main()
                     // Enroll new Cources
                     else if (choice == 2)
                     {
+                        char en_new_course[30];
+                        recv(client_socket,en_new_course,sizeof(en_new_course),0);
+                        printf("%s",en_new_course);
+                        char course_id[20];
+                        getchar();
+                        scanf("%[^\n]",course_id);
+                        send(client_socket,course_id,sizeof(course_id),0);
                     }
                     // Drop Courses
                     else if (choice == 3)
@@ -211,7 +265,7 @@ int main()
                     scanf("%d", &choice);
                     send(client_socket, &choice, sizeof(int), 0);
 
-                    // View All Courses
+                    // View Offered Courses
                     if (choice == 1)
                     {
                         int ack = 1;
