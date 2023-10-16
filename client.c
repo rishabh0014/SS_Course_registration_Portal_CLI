@@ -156,9 +156,9 @@ int main()
                 recv(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
                 printf("%s\n", auth_succ_fail);
                 printf("Hello, %s! Welcome..\n", username);
-                char student_menu[200];
                 while (1)
                 {
+                    char student_menu[300];
                     recv(client_socket, student_menu, sizeof(student_menu), 0);
                     printf("%s", student_menu);
                     int choice;
@@ -200,10 +200,30 @@ int main()
                     // Enroll new Cources
                     else if (choice == 2)
                     {
+                        char en_course_id[20];
+                        recv(client_socket, en_course_id, sizeof(en_course_id), 0);
+                        printf("%s", en_course_id);
+                        char course_id[50];
+                        getchar();
+                        scanf("%[^\n]", course_id);
+                        send(client_socket, course_id, sizeof(course_id), 0);
+                        char send_status[100];
+                        recv(client_socket, send_status, sizeof(send_status), 0);
+                        printf("%s\n", send_status);
                     }
                     // Drop Courses
                     else if (choice == 3)
                     {
+                        char en_course_id[20];
+                        recv(client_socket, en_course_id, sizeof(en_course_id), 0);
+                        printf("%s", en_course_id);
+                        char course_id[50];
+                        getchar();
+                        scanf("%[^\n]", course_id);
+                        send(client_socket, course_id, sizeof(course_id), 0);
+                        char send_status[100];
+                        recv(client_socket, send_status, sizeof(send_status), 0);
+                        printf("%s\n", send_status);
                     }
                     // View Enrolled Course Details
                     else if (choice == 4)

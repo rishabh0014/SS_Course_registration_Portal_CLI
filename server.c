@@ -264,7 +264,7 @@ void removeStudentDetails(const char *login_id, const char *filename)
     char line[256];
     int found = 0;
 
-    while (fgets(line, sizeof(line), originalFile) != NULL)
+    while (fgets(line, sizeof(line), originalFile) != NULL && found == 0)
     {
         char stored_login_id[50];
         if (sscanf(line, "%49[^$]$", stored_login_id) == 1)
@@ -302,7 +302,8 @@ void removeStudentDetails(const char *login_id, const char *filename)
 }
 
 int update_activation_status_login_file(const char *login_id, const char *new_val, const char *filename)
-{   printf("%s,%s\n\n",login_id,new_val);
+{
+    printf("%s,%s\n\n", login_id, new_val);
     int file_fd = open(filename, O_RDWR);
     if (file_fd < 0)
     {
@@ -321,9 +322,9 @@ int update_activation_status_login_file(const char *login_id, const char *new_va
             char stored_username[50], stored_password[50], stored_activate_stu[5];
 
             sscanf(line, "%49[^$]$%49[^$]$%4[^$]$", stored_username, stored_password, stored_activate_stu);
-            printf("%s,%s\n",stored_username,stored_password);
+            printf("%s,%s\n", stored_username, stored_password);
             if (strcmp(stored_username, login_id) == 0)
-            {   
+            {
                 printf("q");
                 removeStudentDetails(login_id, filename);
                 struct Student curr_stu;
@@ -421,7 +422,7 @@ int update_student_details(const char *login_id, const char *this_detail, const 
             strcpy(new_student.address, new_data);
         }
         else if (strcmp(this_detail, "account status") == 0)
-        {   
+        {
             // printf("EE");
             update_activation_status_login_file(login_id, new_data, "data/students_data/student_log_in.txt");
             strcpy(new_student.activate_stu, new_data);
@@ -718,17 +719,11 @@ int search_course_by_id(const char *course_id, const char *filename, struct Cour
 int update_course_details(const char *course_id, const char *this_detail, const char *new_data, const char *filename, const char *faculty_id)
 {
 
-    // struct Course result;
     struct Course new_course;
     if (search_course_by_id(course_id, filename, &new_course))
     {
         if (strcmp(new_course.faculty_id, faculty_id) == 0)
         {
-            // strcpy(new_course.course_id, result.course_id);
-            // strcpy(new_course.course_name, result.course_name);
-            // strcpy(new_course.faculty_id, result.faculty_id);
-            // strcpy(new_course.max_seats, result.max_seats);
-            // strcpy(new_course.rem_seats, result.rem_seats);
             remove_course_from_catalog(course_id, filename, faculty_id);
             if (strcmp(faculty_id, new_course.faculty_id) == 0)
             {
@@ -772,67 +767,179 @@ int update_course_details(const char *course_id, const char *this_detail, const 
     }
 }
 
-void also_update_in_course_details(struct Course temp)
+void update_course_details_by_student(const char *course_id, const char *new_data, const char *filename)
 {
+    struct Course new_course;
+    search_course_by_id(course_id, filename, &new_course);
+    remove_course_from_catalog(course_id, filename, new_course.faculty_id);
+    strcpy(new_course.rem_seats, new_data);
+    write_course_data_to_file(new_course, filename);
 }
 
-int enroll_new_course(const char *login_id, const char *course_id)
+int is_student_course_exist(const char *login_id, const char *course_id, const char *filename)
 {
-    char course_detail_file[] = "data/courses_data/course_details.txt";
-    char course_and_students_file[] = "data/courses_data/course_and_students.txt";
-
-    struct Course temp;
-
-    if (search_course_by_id(course_id, course_detail_file, &temp) == 0)
-    {
-        return -3;
-    }
-
-    int file_fd = open(course_and_students_file, O_RDWR | O_APPEND);
+    int file_fd = open(filename, O_RDONLY);
     if (file_fd < 0)
     {
-        perror("Error opening file");
-        return 0;
+        perror("Error Opening File");
+        return -1;
     }
 
-    char buffer[120];
+    char buffer[256];
     ssize_t bytesRead;
-    int cnt = 0;
+    int student_found = 0;
+
     while ((bytesRead = read(file_fd, buffer, sizeof(buffer))) > 0)
     {
         char *line = strtok(buffer, "\n");
         while (line != NULL)
         {
-            char stored_login_id[50], stored_course_id[50];
+            char curr_login_id[50];
+            char curr_course_id[20];
 
-            sscanf(line, "%29[^$]$%29[^$]$", stored_login_id, stored_course_id);
-
-            if (strcmp(stored_login_id, login_id) == 0)
+            sscanf(line, "%49[^$]$%19[^$]$", curr_login_id, curr_course_id);
+            if (strcmp(curr_login_id, login_id) == 0 && strcmp(curr_course_id, course_id) == 0)
             {
-                cnt++;
-                if (strcmp(stored_course_id, course_id) == 0)
-                {
-                    return -2;
-                }
+                close(file_fd);
+                return 1;
             }
             line = strtok(NULL, "\n");
         }
     }
-    if (cnt >= 5)
-    {
-        return -1;
-    }
-    char to_write[100];
-    snprintf(to_write, sizeof(to_write), "%s$%s$\n", login_id, course_id);
-    if (write(file_fd, to_write, strlen(to_write)))
-    {
-        char this_detail[30] = "remaining seats";
-        also_update_in_course_details(temp);
-        return 1;
-    }
-
     close(file_fd);
     return 0;
+}
+
+int enroll_new_course(const char *login_id, const char *course_id)
+{
+    struct Course curr_course;
+    if (search_course_by_id(course_id, "data/courses_data/course_details.txt", &curr_course) == 0)
+    {
+        return -3;
+    }
+
+    if (strcmp(curr_course.rem_seats, "0") == 0)
+    {
+        return -2;
+    }
+    char *temp;
+    int rem_seats = strtol(curr_course.rem_seats, &temp, 10) - 1;
+    char new_data[20];
+    sprintf(new_data, "%d", rem_seats);
+    update_course_details_by_student(course_id, new_data, "data/courses_data/course_details.txt");
+
+    char filename[] = "data/courses_data/course_and_students.txt";
+    int file_fd = open(filename, O_RDWR | O_APPEND);
+    if (file_fd < 0)
+    {
+        perror("Error opening file");
+        return -1;
+    }
+    char buf[1024];
+    if (is_student_course_exist(login_id, course_id, filename) == 1)
+    {
+        close(file_fd);
+        return 0;
+    }
+    strcpy(buf, login_id);
+    strcat(buf, "$");
+    strcat(buf, course_id);
+    strcat(buf, "$\n");
+    write(file_fd, buf, strlen(buf));
+    close(file_fd);
+    return 1;
+}
+
+int remove_course_details_course_stu(const char *login_id, const char *course_id, const char *filename)
+{
+    FILE *originalFile = fopen(filename, "r");
+    if (originalFile == NULL)
+    {
+        return 0;
+    }
+
+    FILE *tempFile = fopen("tempfile.txt", "w");
+    if (tempFile == NULL)
+    {
+        fclose(originalFile);
+        return 0;
+    }
+
+    char line[256];
+    int found = 0;
+
+    while (fgets(line, sizeof(line), originalFile) != NULL)
+    {
+        char curr_login_id[50];
+        char curr_course_id[20];
+
+        if (sscanf(line, "%49[^$]$%19[^$]$", curr_login_id, curr_course_id) == 2)
+        {
+            if (strcmp(curr_login_id, login_id) == 0 && strcmp(curr_course_id, course_id) == 0)
+            {
+                found = 1;
+            }
+            else
+            {
+                fputs(line, tempFile);
+            }
+        }
+    }
+
+    fclose(originalFile);
+    fclose(tempFile);
+
+    if (found)
+    {
+        if (remove(filename) != 0)
+        {
+            return 0;
+        }
+        if (rename("tempfile.txt", filename) != 0)
+        {
+            return 0;
+        }
+    }
+    else
+    {
+        remove("tempfile.txt");
+        return 0;
+    }
+    return 1;
+}
+
+int drop_new_course(const char *login_id, const char *course_id)
+{
+    struct Course curr_course;
+    if (search_course_by_id(course_id, "data/courses_data/course_details.txt", &curr_course) == 0)
+    {
+        return -3;
+    }
+
+    char filename[] = "data/courses_data/course_and_students.txt";
+    int file_fd = open(filename, O_RDWR | O_APPEND);
+    if (file_fd < 0)
+    {
+        perror("Error opening file");
+        return -1;
+    }
+
+    char buf[1024];
+    if (is_student_course_exist(login_id, course_id, filename) == 0)
+    {
+        close(file_fd);
+        return -2;
+    }
+    if (remove_course_details_course_stu(login_id, course_id, filename) == 1)
+    {
+        return 0;
+    }
+    char *temp;
+    int rem_seats = strtol(curr_course.rem_seats, &temp, 10) + 1;
+    char new_data[20];
+    sprintf(new_data, "%d", rem_seats);
+    update_course_details_by_student(course_id, new_data, "data/courses_data/course_details.txt");
+    return 1;
 }
 
 void *handle_client(void *arg)
@@ -886,7 +993,7 @@ void *handle_client(void *arg)
         // student Logic
         if (num == 1)
         {
-            
+
             if (readUsersFromFile(username, password, "data/students_data/student_log_in.txt"))
             {
                 auth_status = 1;
@@ -896,7 +1003,7 @@ void *handle_client(void *arg)
             {
                 strcpy(auth_succ_fail, "\nLog in Successful");
                 send(client_socket, auth_succ_fail, sizeof(auth_succ_fail), 0);
-                char student_menu[200] = "\nWhat do you want to do?\n\n1) View All Courses\n2) Enroll new Cources\n3) Drop Courses\n4) view Enrolled Course Details\n5) Change Password\n6) Logout and Exit\n\nEnter Your Choice: ";
+                char student_menu[300] = "\nWhat do you want to do?\n\n1) View All Courses\n2) Enroll new Cources\n3) Drop Courses\n4) view Enrolled Course Details\n5) Change Password\n6) Logout and Exit\n\nEnter Your Choice: ";
                 while (1)
                 {
                     send(client_socket, student_menu, sizeof(student_menu), 0);
@@ -925,10 +1032,63 @@ void *handle_client(void *arg)
                     // Enroll new Cources
                     else if (choice == 2)
                     {
+                        char en_course_id[20] = "\nEnter Course ID: ";
+                        send(client_socket, en_course_id, sizeof(en_course_id), 0);
+                        char course_id[50];
+                        recv(client_socket, course_id, sizeof(course_id), 0);
+                        int ack = enroll_new_course(username, course_id);
+                        char send_status[100];
+                        if (ack == 1)
+                        {
+                            strcpy(send_status, "\nEnrolled Successfully!!!!");
+                        }
+                        else if (ack == -3)
+                        {
+                            strcpy(send_status, "\nCourse ID does not Exist");
+                        }
+                        else if (ack == -2)
+                        {
+                            strcpy(send_status, "\nMaximum student limit reached!!");
+                        }
+                        else if (ack == -1)
+                        {
+                            strcpy(send_status, "\nError in Enrollement!! Try again after sometime");
+                        }
+                        else
+                        {
+                            strcpy(send_status, "\nAlready Enrolled!! Can not enrolled again!!");
+                        }
+                        send(client_socket, send_status, sizeof(send_status), 0);
                     }
                     // Drop Courses
                     else if (choice == 3)
                     {
+                        char en_course_id[20] = "\nEnter Course ID: ";
+                        send(client_socket, en_course_id, sizeof(en_course_id), 0);
+                        char course_id[50];
+                        recv(client_socket, course_id, sizeof(course_id), 0);
+                        // remove_course_details_course_stu(username,course_id,"data/courses_data/course_and_students.txt");
+                        int ack = drop_new_course(username, course_id);
+                        // int ack = 1;
+                        printf("ack %d", ack);
+                        char send_status[100];
+                        if (ack == 1)
+                        {
+                            strcpy(send_status, "\nCourse Dropped Successfully!!!!");
+                        }
+                        else if (ack == -3)
+                        {
+                            strcpy(send_status, "\nCourse ID does not Exist");
+                        }
+                        else if (ack == -2)
+                        {
+                            strcpy(send_status, "\nYou did not enroll in this course!!");
+                        }
+                        else
+                        {
+                            strcpy(send_status, "\nError!! Try again after sometime");
+                        }
+                        send(client_socket, send_status, sizeof(send_status), 0);
                     }
                     // View Enrolled Course Details
                     else if (choice == 4)
@@ -1157,7 +1317,7 @@ void *handle_client(void *arg)
 
                     // Add Studednt
                     if (choice == 1)
-                    {   
+                    {
                         char buffer[sizeof(struct Student)];
                         recv(client_socket, buffer, sizeof(struct Student), 0);
                         struct Student student_info;
