@@ -2,6 +2,6 @@ f$q$faculty$q$10$
 d$c$zzz$c$10$
 c$e$zzz$e$10$
 temp$t$faculty$t$10$
-e$a$faculty$a$9$
-b$d$zzz$d$9$
-a$b$faculty$b$10$
+e$aa$faculty$a$9$
+b$dd$zzz$d$9$
+a$cc$faculty$b$10$

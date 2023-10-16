@@ -228,6 +228,28 @@ int main()
                     // View Enrolled Course Details
                     else if (choice == 4)
                     {
+                        int ack;
+                        while (1)
+                        {
+                            recv(client_socket, &ack, sizeof(int), 0);
+                            printf("\n");
+                            if (ack == 1)
+                            {
+                                char buffer[sizeof(struct Course)];
+                                recv(client_socket, buffer, sizeof(struct Course), 0);
+                                struct Course course_info;
+                                memcpy(&course_info, buffer, sizeof(struct Course));
+                                printf("Course ID: %s\n", course_info.course_id);
+                                printf("Course Name: %s\n", course_info.course_name);
+                                printf("Faculty ID: %s\n", course_info.faculty_id);
+                                printf("Remaining Seats: %s\n\n", course_info.rem_seats);
+                            }
+                            else
+                            {
+                                break;
+                            }
+                            printf("%d\n", ack);
+                        }
                     }
                     // Change Password
                     else if (choice == 5)

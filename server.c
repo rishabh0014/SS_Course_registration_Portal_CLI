@@ -942,6 +942,52 @@ int drop_new_course(const char *login_id, const char *course_id)
     return 1;
 }
 
+int view_enrolled_course(const char *login_id, const char *filename, int client_socket)
+{
+    int file_fd = open(filename, O_RDONLY);
+    if (file_fd < 0)
+    {
+        perror("Error Opening File");
+        return -1;
+    }
+
+    char buffer[256];
+    ssize_t bytesRead;
+    int student_found = 0;
+    int ack = 1;
+    while ((bytesRead = read(file_fd, buffer, sizeof(buffer))) > 0)
+    {
+        char *line = strtok(buffer, "\n");
+        while (line != NULL)
+        {
+            char curr_login_id[50];
+            char curr_course_id[20];
+
+            sscanf(line, "%49[^$]$%29[^$]$", curr_login_id, curr_course_id);
+            if (strcmp(curr_login_id, login_id) == 0)
+            {
+                printf("ID %s\n", curr_course_id);
+                struct Course result;
+                if (search_course_by_id(curr_course_id, "data/courses_data/course_details.txt", &result) == 1)
+                {
+                    send(client_socket, &ack, sizeof(int), 0);
+                    char buffer[sizeof(struct Course)];
+                    memcpy(buffer, &result, sizeof(struct Course));
+                    send(client_socket, buffer, sizeof(struct Course), 0);
+                    printf("here");
+                }
+                printf("EE");
+            }
+            line = strtok(NULL, "\n");
+        }
+    }
+    printf("RR");
+    ack = 0;
+    send(client_socket, &ack, sizeof(int), 0);
+    close(file_fd);
+    return 0;
+}
+
 void *handle_client(void *arg)
 {
     int client_socket = *((int *)arg);
@@ -1067,9 +1113,7 @@ void *handle_client(void *arg)
                         send(client_socket, en_course_id, sizeof(en_course_id), 0);
                         char course_id[50];
                         recv(client_socket, course_id, sizeof(course_id), 0);
-                        // remove_course_details_course_stu(username,course_id,"data/courses_data/course_and_students.txt");
                         int ack = drop_new_course(username, course_id);
-                        // int ack = 1;
                         printf("ack %d", ack);
                         char send_status[100];
                         if (ack == 1)
@@ -1093,6 +1137,8 @@ void *handle_client(void *arg)
                     // View Enrolled Course Details
                     else if (choice == 4)
                     {
+                        char filename[50] = "data/courses_data/course_and_students.txt";
+                        view_enrolled_course(username, filename, client_socket);
                     }
                     // Change Password
                     else if (choice == 5)
