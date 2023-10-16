@@ -53,4 +53,14 @@ Step 3: Initial Configuration
     - Password: `1234`
 - Please ensure that you change your password after the initial login to secure your account.
 
+## FAQ
+- I will update this section at the end :)
 
+## Roadmap
+
+- Here's what we have planned for the future of the Academia Portal:
+  - Enhanced User Profiles: Improve user profile management with additional features and customization options.
+  - Integrated Messaging System: Implement a built-in messaging system for better communication within the portal.
+  - Advanced Course Management: Expand course management features, including course scheduling, resource allocation, and course analytics.
+  - For enhanced security, it's recommended that you implement a password reset or account creation process that allows users to set their own passwords during their first login.
+  
