@@ -7,6 +7,7 @@
 - [Installation](#installation)
 - [FAQ](#faq)
 - [RoadMap](#roadmap)
+- [License](#license)
 
 ## Prerequisites:
 - Before you can install and run the Academia Portal, you need to have a C programming environment installed on your system. This typically includes a C compiler, such as GCC (GNU Compiler Collection).
@@ -66,4 +67,6 @@ Step 3: Initial Configuration
   - Integrated Messaging System: Implement a built-in messaging system for better communication within the portal.
   - Advanced Course Management: Expand course management features, including course scheduling, resource allocation, and course analytics.
   - For enhanced security, it's recommended that you implement a password reset or account creation process that allows users to set their own passwords during their first login.
-  
+
+## License
+This project is licensed under the XYZ License - see the [LICENSE](dummy) file for details.
