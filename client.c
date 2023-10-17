@@ -108,6 +108,7 @@ int main()
             exit(1);
         }
     }
+    
     // welcome
     {
         recv(client_socket, welcome, sizeof(welcome), 0);

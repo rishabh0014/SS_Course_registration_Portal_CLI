@@ -1,9 +1,7 @@
 f$q$faculty$q$10$
 d$c$zzz$c$10$
 c$e$zzz$e$9$
-e$aa$faculty$a$9$
-b$dd$zzz$d$9$
-temp$rr$faculty$t$9$
-tem$te$faculty$e$e$
-tem$te$faculty$e$e$
+e$aa$faculty$a$8$
+b$dd$zzz$d$7$
+temp$rr$faculty$t$8$
 a$aa$faculty$b$9$
