@@ -973,12 +973,13 @@ int view_enrolled_course(const char *login_id, const char *filename, int client_
                     char buffer[sizeof(struct Course)];
                     memcpy(buffer, &result, sizeof(struct Course));
                     send(client_socket, buffer, sizeof(struct Course), 0);
+                    printf("here");
                 }
             }
             line = strtok(NULL, "\n");
         }
     }
-    printf("RR");
+    // printf("RR");
     ack = 0;
     send(client_socket, &ack, sizeof(int), 0);
     close(file_fd);
