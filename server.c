@@ -47,7 +47,7 @@ struct Course
     char rem_seats[20];
 };
 
-//Admin part Start
+// Admin part Start
 void write_student_data_to_file(struct Student student, const char *filename)
 {
     struct flock lock;
@@ -829,9 +829,9 @@ int update_course_details(const char *course_id, const char *this_detail, const 
         return 0;
     }
 }
-//Faculty part end
+// Faculty part end
 
-//Student Part start
+// Student Part start
 void update_course_details_by_student(const char *course_id, const char *new_data, const char *filename)
 {
     struct Course new_course;
@@ -1135,9 +1135,9 @@ int view_enrolled_course(const char *login_id, const char *filename, int client_
     close(file_fd);
     return 0;
 }
-//Student part end
+// Student part end
 
-//New Client part start
+// New Client part start
 void *handle_client(void *arg)
 {
     int client_socket = *((int *)arg);
@@ -1530,9 +1530,18 @@ void *handle_client(void *arg)
                         recv(client_socket, buffer, sizeof(struct Student), 0);
                         struct Student student_info;
                         memcpy(&student_info, buffer, sizeof(struct Student));
-                        write_student_data_to_file(student_info, "data/students_data/student_data.txt");
-                        write_student_log_in_data_to_file(student_info, "data/students_data/student_log_in.txt");
-                        char succ[40] = "\nStudent record added successfully\n";
+                        char succ[50];
+                        struct Student temp;
+                        if (search_student_by_id(student_info.login_id, "data/students_data/student_data.txt", &temp) == 1)
+                        {
+                            strcpy(succ, "\nStudent with the same ID already exist\n");
+                        }
+                        else
+                        {
+                            write_student_data_to_file(student_info, "data/students_data/student_data.txt");
+                            write_student_log_in_data_to_file(student_info, "data/students_data/student_log_in.txt");
+                            strcpy(succ, "\nStudent record added successfully\n");
+                        }
                         send(client_socket, succ, sizeof(succ), 0);
                     }
                     // View Student Details
@@ -1712,7 +1721,7 @@ void *handle_client(void *arg)
     clients_count--;
     pthread_exit(NULL);
 }
-//New Client part end
+// New Client part end
 
 int main()
 {

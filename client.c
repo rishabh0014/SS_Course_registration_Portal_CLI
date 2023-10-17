@@ -515,7 +515,7 @@ int main()
                             char buffer[sizeof(struct Student)];
                             memcpy(buffer, &student_info, sizeof(struct Student));
                             send(client_socket, buffer, sizeof(struct Student), 0);
-                            char succ[40];
+                            char succ[50];
                             recv(client_socket, succ, sizeof(succ), 0);
                             printf("%s", succ);
                         }
