@@ -1,7 +1,7 @@
 f$q$faculty$q$10$
 d$c$zzz$c$10$
-c$e$zzz$e$10$
-temp$t$faculty$t$10$
+c$e$zzz$e$9$
 e$aa$faculty$a$9$
 b$dd$zzz$d$9$
-a$cc$faculty$b$10$
+a$qq$faculty$b$10$
+temp$rr$faculty$t$10$

@@ -966,7 +966,6 @@ int view_enrolled_course(const char *login_id, const char *filename, int client_
             sscanf(line, "%49[^$]$%29[^$]$", curr_login_id, curr_course_id);
             if (strcmp(curr_login_id, login_id) == 0)
             {
-                printf("ID %s\n", curr_course_id);
                 struct Course result;
                 if (search_course_by_id(curr_course_id, "data/courses_data/course_details.txt", &result) == 1)
                 {
@@ -974,7 +973,6 @@ int view_enrolled_course(const char *login_id, const char *filename, int client_
                     char buffer[sizeof(struct Course)];
                     memcpy(buffer, &result, sizeof(struct Course));
                     send(client_socket, buffer, sizeof(struct Course), 0);
-                    printf("here");
                 }
             }
             line = strtok(NULL, "\n");

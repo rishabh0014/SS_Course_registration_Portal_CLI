@@ -248,7 +248,6 @@ int main()
                             {
                                 break;
                             }
-                            printf("%d\n", ack);
                         }
                     }
                     // Change Password
