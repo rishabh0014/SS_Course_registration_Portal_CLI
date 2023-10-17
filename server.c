@@ -47,6 +47,7 @@ struct Course
     char rem_seats[20];
 };
 
+//Admin part Start
 void write_student_data_to_file(struct Student student, const char *filename)
 {
     struct flock lock;
@@ -549,6 +550,7 @@ int update_faculty_details(const char *login_id, const char *this_detail, const 
         return 0;
     }
 }
+// Admin Part end
 
 // Faculty part start
 int write_course_data_to_file(struct Course add_course, const char *filename)
@@ -827,7 +829,9 @@ int update_course_details(const char *course_id, const char *this_detail, const 
         return 0;
     }
 }
+//Faculty part end
 
+//Student Part start
 void update_course_details_by_student(const char *course_id, const char *new_data, const char *filename)
 {
     struct Course new_course;
@@ -1131,7 +1135,9 @@ int view_enrolled_course(const char *login_id, const char *filename, int client_
     close(file_fd);
     return 0;
 }
+//Student part end
 
+//New Client part start
 void *handle_client(void *arg)
 {
     int client_socket = *((int *)arg);
@@ -1706,6 +1712,7 @@ void *handle_client(void *arg)
     clients_count--;
     pthread_exit(NULL);
 }
+//New Client part end
 
 int main()
 {
