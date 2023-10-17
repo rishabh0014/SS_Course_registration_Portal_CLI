@@ -12,7 +12,7 @@
 
 #define PORT 8080
 #define MAX_CLIENTS 10
-#define MAX_COURSES 50
+#define MAX_COURSES 10
 
 int clients_count = 0;
 
