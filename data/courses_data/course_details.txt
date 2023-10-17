@@ -3,5 +3,7 @@ d$c$zzz$c$10$
 c$e$zzz$e$9$
 e$aa$faculty$a$9$
 b$dd$zzz$d$9$
-a$qq$faculty$b$10$
-temp$rr$faculty$t$10$
+temp$rr$faculty$t$9$
+tem$te$faculty$e$e$
+tem$te$faculty$e$e$
+a$aa$faculty$b$9$

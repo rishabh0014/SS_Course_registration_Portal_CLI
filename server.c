@@ -58,6 +58,11 @@ struct Student_Courses
 
 void write_student_data_to_file(struct Student student, const char *filename)
 {
+    struct flock lock;
+    lock.l_type = F_WRLCK;
+    lock.l_whence = SEEK_SET;
+    lock.l_start = 0;
+    lock.l_len = 0;
     int file_fd = open(filename, O_WRONLY | O_APPEND);
     if (file_fd < 0)
     {
@@ -74,8 +79,12 @@ void write_student_data_to_file(struct Student student, const char *filename)
              student.email_id,
              student.address,
              student.activate_stu);
+    fcntl(file_fd, F_SETLKW, &lock);
 
     write(file_fd, buffer, strlen(buffer));
+    lock.l_type = F_UNLCK;
+    fcntl(file_fd, F_SETLKW, &lock);
+
     close(file_fd);
 }
 
@@ -264,7 +273,7 @@ void removeStudentDetails(const char *login_id, const char *filename)
     char line[256];
     int found = 0;
 
-    while (fgets(line, sizeof(line), originalFile) != NULL && found == 0)
+    while (fgets(line, sizeof(line), originalFile) != NULL )
     {
         char stored_login_id[50];
         if (sscanf(line, "%49[^$]$", stored_login_id) == 1)
@@ -845,12 +854,13 @@ int enroll_new_course(const char *login_id, const char *course_id)
     strcat(buf, "$");
     strcat(buf, course_id);
     strcat(buf, "$\n");
+    printf("%s\n",buf);
     write(file_fd, buf, strlen(buf));
     close(file_fd);
     return 1;
 }
 
-int remove_course_details_course_stu(const char *login_id, const char *course_id, const char *filename)
+int remove_course_details_course_stu_using_login_id(const char *login_id, const char *course_id, const char *filename)
 {
     FILE *originalFile = fopen(filename, "r");
     if (originalFile == NULL)
@@ -903,9 +913,67 @@ int remove_course_details_course_stu(const char *login_id, const char *course_id
     else
     {
         remove("tempfile.txt");
+        return 1;
+    }
+    return 0;
+}
+
+int remove_course_details_course_stu_using_course_id(const char *course_id, const char *filename)
+{
+    FILE *originalFile = fopen(filename, "r");
+    if (originalFile == NULL)
+    {
         return 0;
     }
-    return 1;
+
+    FILE *tempFile = fopen("tempfile.txt", "w");
+    if (tempFile == NULL)
+    {
+        fclose(originalFile);
+        return 0;
+    }
+
+    char line[256];
+    int found = 0;
+
+    while (fgets(line, sizeof(line), originalFile) != NULL)
+    {
+        char curr_login_id[50];
+        char curr_course_id[20];
+
+        if (sscanf(line, "%49[^$]$%19[^$]$", curr_login_id, curr_course_id) == 2)
+        {
+            if (strcmp(curr_course_id, course_id) == 0)
+            {
+                found = 1;
+            }
+            else
+            {
+                fputs(line, tempFile);
+            }
+        }
+    }
+
+    fclose(originalFile);
+    fclose(tempFile);
+
+    if (found)
+    {
+        if (remove(filename) != 0)
+        {
+            return 0;
+        }
+        if (rename("tempfile.txt", filename) != 0)
+        {
+            return 0;
+        }
+    }
+    else
+    {
+        remove("tempfile.txt");
+        return 1;
+    }
+    return 0;
 }
 
 int drop_new_course(const char *login_id, const char *course_id)
@@ -930,7 +998,7 @@ int drop_new_course(const char *login_id, const char *course_id)
         close(file_fd);
         return -2;
     }
-    if (remove_course_details_course_stu(login_id, course_id, filename) == 1)
+    if (remove_course_details_course_stu_using_login_id(login_id, course_id, filename) == 1)
     {
         return 0;
     }
@@ -1070,6 +1138,7 @@ void *handle_client(void *arg)
                             for (int i = 0; i < total_course - 1; i++)
                             {
                                 send(client_socket, &all_courses[i], sizeof(all_courses[i]), 0);
+                                sleep(1);
                             }
                         }
                     }
@@ -1167,7 +1236,11 @@ void *handle_client(void *arg)
                     }
                     // Logout and Exit
                     else if (choice == 6)
-                    {
+                    {   
+                        char bye_bye[40] = "\nSigning Out.....Please Wait..\n";
+                        send(client_socket,bye_bye,sizeof(bye_bye),0);
+                        char bye[20] = "\nBye Bye....\n";
+                        send(client_socket,bye,sizeof(bye),0);
                         break;
                     }
                 }
@@ -1247,7 +1320,7 @@ void *handle_client(void *arg)
                         char filename[] = "data/courses_data/course_details.txt";
                         char added_succ[30];
                         if (write_course_data_to_file(add_course, filename))
-                        {
+                        {   
                             strcpy(added_succ, "Course added successfully");
                         }
                         else
@@ -1266,7 +1339,8 @@ void *handle_client(void *arg)
                         char filename[] = "data/courses_data/course_details.txt";
                         char remove_status[30];
                         if (remove_course_from_catalog(take_course_id, filename, username))
-                        {
+                        {   
+                            remove_course_details_course_stu_using_course_id(take_course_id,"data/courses_data/course_and_students.txt");
                             strcpy(remove_status, "Course removed successfully");
                         }
                         else
@@ -1330,7 +1404,11 @@ void *handle_client(void *arg)
                     }
                     // Logout and Exit
                     else if (choice == 6)
-                    {
+                    {   
+                        char bye_bye[40] = "\nSigning Out.....Please Wait..\n";
+                        send(client_socket,bye_bye,sizeof(bye_bye),0);
+                        char bye[20] = "\nBye Bye....\n";
+                        send(client_socket,bye,sizeof(bye),0);
                         break;
                     }
                 }
@@ -1368,6 +1446,8 @@ void *handle_client(void *arg)
                         memcpy(&student_info, buffer, sizeof(struct Student));
                         write_student_data_to_file(student_info, "data/students_data/student_data.txt");
                         write_student_log_in_data_to_file(student_info, "data/students_data/student_log_in.txt");
+                        char succ[40] = "\nStudent record added successfully\n";
+                        send(client_socket,succ,sizeof(succ),0);
                     }
                     // View Student Details
                     else if (choice == 2)
@@ -1402,6 +1482,8 @@ void *handle_client(void *arg)
                         memcpy(&faculty_info, buffer, sizeof(struct Faculty));
                         write_faculty_data_to_file(faculty_info, "data/faculties_data/faculty_data.txt");
                         write_faculty_log_in_data_to_file(faculty_info, "data/faculties_data/faculties_log_in.txt");
+                        char succ[40] = "\nFaculty record added successfully\n";
+                        send(client_socket,succ,sizeof(succ),0);
                     }
                     // View Faculty Details
                     else if (choice == 4)
@@ -1525,6 +1607,10 @@ void *handle_client(void *arg)
                     // LogOut and Exit
                     else if (choice == 9)
                     {
+                        char bye_bye[40] = "\nSigning Out.....Please Wait..\n";
+                        send(client_socket,bye_bye,sizeof(bye_bye),0);
+                        char bye[20] = "\nBye Bye....\n";
+                        send(client_socket,bye,sizeof(bye),0);
                         break;
                     }
                 }

@@ -275,6 +275,13 @@ int main()
                     // LogOut and Exit
                     else if (choice == 6)
                     {
+                        char bye_bye[40];
+                        recv(client_socket, bye_bye, sizeof(bye_bye), 0);
+                        printf("%s", bye_bye);
+                        sleep(1);
+                        char bye[20];
+                        recv(client_socket, bye, sizeof(bye), 0);
+                        printf("%s", bye);
                         exit(0);
                     }
                 }
@@ -377,7 +384,7 @@ int main()
                     {
                         char en_course_id[30];
                         recv(client_socket, en_course_id, sizeof(en_course_id), 0);
-                        printf("%s\n", en_course_id);
+                        printf("%s", en_course_id);
                         char take_course_id[20];
                         getchar();
                         scanf("%[^\n]", take_course_id);
@@ -441,6 +448,13 @@ int main()
                     // LogOut and Exit
                     else if (choice == 6)
                     {
+                        char bye_bye[40];
+                        recv(client_socket, bye_bye, sizeof(bye_bye), 0);
+                        printf("%s", bye_bye);
+                        sleep(1);
+                        char bye[20];
+                        recv(client_socket, bye, sizeof(bye), 0);
+                        printf("%s", bye);
                         exit(0);
                     }
                 }
@@ -500,6 +514,9 @@ int main()
                             char buffer[sizeof(struct Student)];
                             memcpy(buffer, &student_info, sizeof(struct Student));
                             send(client_socket, buffer, sizeof(struct Student), 0);
+                            char succ[40];
+                            recv(client_socket, succ, sizeof(succ), 0);
+                            printf("%s", succ);
                         }
                     }
                     // View Student Details
@@ -566,6 +583,9 @@ int main()
                             char buffer[sizeof(struct Faculty)];
                             memcpy(buffer, &faculty_info, sizeof(struct Faculty));
                             send(client_socket, buffer, sizeof(struct Faculty), 0);
+                            char succ[40];
+                            recv(client_socket, succ, sizeof(succ), 0);
+                            printf("%s", succ);
                         }
                     }
                     // View Faculty Details
@@ -694,6 +714,13 @@ int main()
                     // LogOut and Exit
                     else if (choice == 9)
                     {
+                        char bye_bye[40];
+                        recv(client_socket, bye_bye, sizeof(bye_bye), 0);
+                        printf("%s", bye_bye);
+                        sleep(1);
+                        char bye[20];
+                        recv(client_socket, bye, sizeof(bye), 0);
+                        printf("%s", bye);
                         exit(0);
                     }
                 }
