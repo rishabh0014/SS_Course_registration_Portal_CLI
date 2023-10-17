@@ -976,7 +976,6 @@ int view_enrolled_course(const char *login_id, const char *filename, int client_
                     send(client_socket, buffer, sizeof(struct Course), 0);
                     printf("here");
                 }
-                printf("EE");
             }
             line = strtok(NULL, "\n");
         }
